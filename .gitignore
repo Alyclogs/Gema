@@ -1,0 +1,7 @@
+node_modules
+.env
+token.txt
+backups
+gema.zip
+decorina.zip
+congif.json
