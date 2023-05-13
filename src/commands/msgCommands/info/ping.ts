@@ -1,5 +1,5 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
-import { Command } from '../../../lib/Command';
+import { ColorResolvable, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { Command } from '../../../structures/Command';
 import { Permissions } from '../../../util/Permissions'
 
 export default new Command({
@@ -16,8 +16,8 @@ export default new Command({
             embeds: [
                 new EmbedBuilder()
                     .setTitle(`🏓 Pong!`)
-                    .setDescription(`${emojis.dot}Mensajes: \`${Date.now() - message.createdTimestamp}\` ms\n${emojis.dot}API: \`${Math.round(client.ws.ping)}\` ms`)
-                    .setColor(color)
+                    .setDescription(`${emojis?.dot}Mensajes: \`${Date.now() - message.createdTimestamp}\` ms\n${emojis?.dot}API: \`${Math.round(client.ws.ping)}\` ms`)
+                    .setColor(color as ColorResolvable)
             ],
             allowedMentions: { repliedUser: false }
         })

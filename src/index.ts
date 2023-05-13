@@ -1,4 +1,4 @@
-import Bot from './lib/Bot';
+import Bot from './structures/Bot';
 require('dotenv').config()
 
 export const bot = new Bot()

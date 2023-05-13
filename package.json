@@ -1,13 +1,13 @@
 {
-  "name": "kieran-bot",
+  "name": "gema-bot",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "npx nodemon",
-    "build": "rimraf ./build && tsc",
-    "start": "npm run build && node build/index.js",
+    "build": "rimraf ./dist && tsc",
+    "start": "npm run build && node dist/index.js",
     "lint": "eslint . --ext .ts",
     "lint-and-fix": "eslint . --ext .ts --fix",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
@@ -15,15 +15,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rootz491/Kieran-bot.git"
+    "url": "git+https://github.com/Alyclogs/gema.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/rootz491/Kieran-bot/issues"
+    "url": "https://github.com/Alyclogs/gema.git"
   },
-  "homepage": "https://github.com/rootz491/Kieran-bot#readme",
+  "homepage": "https://github.com/Alyclogs/gema.git",
   "devDependencies": {
     "@types/node": "^18.11.18",
     "@typescript-eslint/eslint-plugin": "^5.48.1",
@@ -40,8 +40,11 @@
   },
   "dependencies": {
     "@discordjs/rest": "^1.7.1",
-    "discord.js": "^14.7.1",
+    "discord.js": "^14.11.0",
     "dotenv": "^16.0.3",
-    "mongoose": "^7.1.0"
+    "lib-unifonts": "^1.0.4",
+    "mongoose": "^7.1.0",
+    "openai": "^3.2.1",
+    "pagination.djs": "^4.0.9"
   }
 }

@@ -1,6 +1,50 @@
-const mongoose = require('mongoose')
+import { ColorResolvable } from 'discord.js'
+import mongoose from 'mongoose'
+import { bot } from '..'
 
-const embeds = new mongoose.Schema({
+export class EmbedModel {
+  guildId: string = ''
+  name: string = ''
+  data?: EmbedDataType = {
+    author: {
+      name: '',
+      icon_url: ''
+    },
+    title: '',
+    description: '',
+    color: bot.color,
+    thumbnail: '',
+    image: '',
+    footer: {
+      text: '',
+      icon_url: ''
+    },
+    timestamp: false
+  }
+}
+
+export interface EmbedDataType {
+  author: EmbedAuthorType
+  title: string
+  description: string
+  color: ColorResolvable
+  thumbnail: string
+  image: string
+  footer: EmbedFooterType
+  timestamp: boolean
+}
+
+type EmbedAuthorType = {
+  name: string,
+  icon_url: string
+}
+
+type EmbedFooterType = {
+  text: string,
+  icon_url: string
+}
+
+const embeds = new mongoose.Schema<EmbedModel>({
   guildId: { type: String, required: true },
   name: { type: String, required: true },
   data: {
@@ -12,11 +56,9 @@ const embeds = new mongoose.Schema({
       thumbnail: String,
       image: String,
       footer: { type: Object, default: { text: String, icon_url: String } },
-      timestamp: { type: Boolean, default: false }
+      timestamp: Boolean
     }
   }
 })
 
-const model = new mongoose.model('embeds', embeds)
-
-module.exports = model
+export const model = mongoose.model<EmbedModel>('embeds', embeds)

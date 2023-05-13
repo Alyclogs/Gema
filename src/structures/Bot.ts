@@ -1,13 +1,14 @@
-import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, GatewayIntentBits } from 'discord.js';
+import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, ColorResolvable, GatewayIntentBits, HexColorString } from 'discord.js';
 import { join } from 'path';
 import fs from 'fs';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import config from '../config.json';
-import { CommandType, SlashCommandType } from '../typing/Command';
-import { RegisterCommandsOptions } from '../typing/RegisterCommandOptions';
-import emojis from '../util/emojis.json'
+import { CommandType, SlashCommandType, RegisterCommandsOptions } from '../typing/Command';
+import emojis from '../botdata/emojis.json'
 import { Event } from '../typing/Event';
+import { Autoresponder } from '../models/autoresponder-model.js'
+import { EmbedModel } from '../models/embed-model';
 
 export default class Bot extends Client {
   public commands = new Collection<string, CommandType>()
@@ -15,10 +16,10 @@ export default class Bot extends Client {
   private commandsArray: ApplicationCommandDataResolvable[] = [];
   public emotes = emojis
   public timeouts = new Collection<string, number>()
-  public color = config.color
+  public color: ColorResolvable = config.color as ColorResolvable
   public ownerIDS = config.ownerIDS
-  public autoresponders = []
-  public embeds = []
+  public autoresponders: Autoresponder[] = []
+  public embeds: EmbedModel[] = []
   public nsfwgifs: string[] = []
 
   constructor() {
@@ -106,10 +107,12 @@ export default class Bot extends Client {
       }
     }
 
+    /*
     this.registerCommands({
       commands: this.commandsArray,
       guildId: process.env.guildId
     })
+    */
   }
 
   private async registerCommands({ commands, guildId }: RegisterCommandsOptions) {

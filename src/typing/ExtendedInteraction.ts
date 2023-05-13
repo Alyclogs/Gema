@@ -1,5 +1,6 @@
-import { CommandInteraction, GuildMember } from "discord.js";
+import { BaseInteraction, CommandInteraction, Guild, GuildMember } from "discord.js";
 
-export default interface ExtendedInteraction extends CommandInteraction {
+export default interface ExtendedInteraction extends BaseInteraction {
     member: GuildMember;
+    guild: Guild;
 }

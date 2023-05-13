@@ -1,34 +1,33 @@
-import { ChatInputCommandInteraction, Client, ColorResolvable, CommandInteractionOptionResolver, PermissionsBitField, time } from 'discord.js';
+import { AutocompleteInteraction, ChatInputCommandInteraction, Client, ColorResolvable, CommandInteractionOptionResolver, PermissionResolvable, PermissionsBitField, time } from 'discord.js';
 import ExtendedInteraction from '../typing/ExtendedInteraction';
 import { Event } from '../typing/Event';
-import Bot from '../lib/Bot';
+import Bot from '../structures/Bot';
 
 export default new Event({
   name: "interactionCreate",
   once: false
 },
   async (client: Bot, interaction: ExtendedInteraction) => {
-    if (!interaction.isCommand()) return;
+    if (!interaction.guild) return
+    const { emotes, timeouts } = client
+
     if (interaction.isChatInputCommand()) {
-
       const { member, guild, commandName } = interaction
-      const { emotes, timeouts } = client
-
       let command = client.slashCommands.get(interaction.commandName)
       if (!command) return
 
       const memberperms = command.memberperms || []
       const botperms = command.botperms || []
 
-      if (memberperms?.length > 0 && !(memberperms.every(p => member?.permissions.has(p.flag)))) {
-        let permsFaltantes = memberperms.filter(dmp => !member.permissions.has(dmp.flag)).map(dmp => `\`${dmp.perm}\``).join(', ')
+      if (memberperms?.length > 0 && !(memberperms.every(p => member?.permissions.has(p.flag as PermissionResolvable)))) {
+        let permsFaltantes = memberperms.filter(dmp => !member.permissions.has(dmp.flag as PermissionResolvable)).map(dmp => `\`${dmp.perm}\``).join(', ')
         return interaction.reply({
           content: `${emotes['error']} No tienes suficientes permisos para ejecutar este comando\nPermisos faltantes: ${permsFaltantes}`,
           ephemeral: true
         })
       }
-      if (botperms?.length > 0 && !(botperms.every(p => guild?.members.me?.permissions.has(p.flag)))) {
-        let permsFaltantes = botperms.filter(dmp => !guild?.members?.me?.permissions.has(dmp.flag)).map(dmp => `\`${dmp.perm}\``).join(', ')
+      if (botperms?.length > 0 && !(botperms.every(p => guild?.members.me?.permissions.has(p.flag as PermissionResolvable)))) {
+        let permsFaltantes = botperms.filter(dmp => !guild?.members?.me?.permissions.has(dmp.flag as PermissionResolvable)).map(dmp => `\`${dmp.perm}\``).join(', ')
         return interaction.reply({
           content: `${emotes['error']} No tengo suficientes permisos para ejecutar este comando\nPermisos faltantes: ${permsFaltantes}`,
           ephemeral: true
@@ -58,5 +57,19 @@ export default new Event({
         color: client.color as ColorResolvable,
         emojis: client.emotes
       });
+    } else if (interaction.isAutocomplete()) {
+
+      let command = client.slashCommands.get(interaction.commandName)
+      if (!command) return
+
+      if (command.autocomplete) {
+        await command.autocomplete({
+          client: client,
+          interaction: interaction as AutocompleteInteraction,
+          args: interaction.options as CommandInteractionOptionResolver,
+          color: client.color as ColorResolvable,
+          emojis: client.emotes
+        });
+      }
     }
   })
