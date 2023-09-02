@@ -1,4 +1,4 @@
-import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, ColorResolvable, GatewayIntentBits, HexColorString } from 'discord.js';
+import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, ColorResolvable, GatewayIntentBits, HexColorString, ModalBuilder } from 'discord.js';
 import { join } from 'path';
 import fs from 'fs';
 import { REST } from '@discordjs/rest';
@@ -7,20 +7,23 @@ import config from '../config.json';
 import { CommandType, SlashCommandType, RegisterCommandsOptions } from '../typing/Command';
 import emojis from '../botdata/emojis.json'
 import { Event } from '../typing/Event';
-import { Autoresponder } from '../models/autoresponder-model.js'
-import { EmbedModel } from '../models/embed-model';
+import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, GSelectMenu } from '../models/gema-models'
 
 export default class Bot extends Client {
   public commands = new Collection<string, CommandType>()
   public slashCommands = new Collection<string, SlashCommandType>();
-  private commandsArray: ApplicationCommandDataResolvable[] = [];
+  public commandsArray: ApplicationCommandDataResolvable[] = [];
   public emotes = emojis
   public timeouts = new Collection<string, number>()
   public color: ColorResolvable = config.color as ColorResolvable
   public ownerIDS = config.ownerIDS
   public autoresponders: Autoresponder[] = []
-  public embeds: EmbedModel[] = []
+  public embeds: GEmbed[] = []
   public nsfwgifs: string[] = []
+  public buttons = new Collection<string, GButton>()
+  public selectmenus: GSelectMenu[] = []
+  public messages: GMessage[] = []
+  public modals: ModalBuilder[] = []
 
   constructor() {
     super({
@@ -44,7 +47,7 @@ export default class Bot extends Client {
 
     this.importEvents();
     this.importCommands();
-    this.importSlashCommands();
+    this.importSlashCommands(true);
   }
 
   private async importEvents() {
@@ -87,7 +90,7 @@ export default class Bot extends Client {
     console.log(`[✅] Comandos cargados`);
   }
 
-  private async importSlashCommands() {
+  private async importSlashCommands(register: boolean, guildID?: string | undefined) {
     const commandFolders = fs
       .readdirSync(join(__dirname, '../commands/slashCommands'))
 
@@ -107,12 +110,12 @@ export default class Bot extends Client {
       }
     }
 
-    /*
-    this.registerCommands({
-      commands: this.commandsArray,
-      guildId: process.env.guildId
-    })
-    */
+    if (register) {
+      this.registerCommands({
+        commands: this.commandsArray,
+        guildId: guildID || undefined
+      })
+    }
   }
 
   private async registerCommands({ commands, guildId }: RegisterCommandsOptions) {
@@ -137,6 +140,14 @@ export default class Bot extends Client {
           console.log(`[✅] Comandos slash cargados`)
         )
         .catch(console.error);
+    }
+  }
+
+  public async syncButtons() {
+    this.buttons.sweep(() => true)
+    const buttons = await buttonModel.find({}).exec()
+    for (let button of buttons) {
+      this.buttons.set(button.customId, button)
     }
   }
 }

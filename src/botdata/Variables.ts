@@ -1,6 +1,11 @@
-import { Message, ChatInputCommandInteraction, GuildMember, User } from 'discord.js';
+import { Message, ChatInputCommandInteraction, GuildMember, User, BaseInteraction } from 'discord.js';
 
-const variables = (input: Message | ChatInputCommandInteraction | GuildMember) => {
+export type VariableType = {
+    name: string,
+    value: string
+}
+
+const variables = (input: Message | ChatInputCommandInteraction | GuildMember | BaseInteraction) => {
 
     return {
         user: {
@@ -217,4 +222,16 @@ const matches = {
     modifybal: /(?<={modifybal:)(.+?(?:(?<=\{)\w*(?=\}).+?)*(?=}))/gi
 }
 
-export { variables, functions, matches }
+function getVars(text: string, startTag: string, endTag: string, entire?: boolean | undefined) {
+    const regex = new RegExp(`${startTag}((?:[^{}]|\\{(?:[^{}]|\\{(?:[^{}]|\\{[^{}]*\\})*[^{}]*\\})*\\})*)${endTag}`, 'g');
+    const matches = [];
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        if (entire) matches.push(match[0]);
+        else matches.push(match[1]);
+    }
+    return matches;
+}
+
+export { variables, functions, matches, getVars }

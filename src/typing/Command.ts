@@ -1,4 +1,4 @@
-import { ApplicationCommandDataResolvable, AutocompleteInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteraction, CommandInteractionOptionResolver, Message, MessageApplicationCommandData, PermissionResolvable, SlashCommandBuilder, SlashCommandOptionsOnlyBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "discord.js";
+import { ApplicationCommandDataResolvable, AutocompleteInteraction, ButtonInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, Message, PermissionResolvable, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "discord.js";
 import Bot from "../structures/Bot";
 import emojis from "../botdata/emojis.json"
 
@@ -18,6 +18,14 @@ interface SlashCommandAutocompleteOptions {
   emojis: typeof emojis;
 }
 
+export interface ButtonRunOptions {
+  client: Bot
+  interaction: ButtonInteraction
+  args: CommandInteractionOptionResolver
+  color: ColorResolvable
+  emojis: typeof emojis;
+}
+
 interface CommandRunOptions {
   client: Bot;
   message: Message;
@@ -32,14 +40,14 @@ export type CommandPerms = {
 }
 
 type SlashCommandRunFunction = (options: SlashCommandRunOptions) => any;
-type CommandRunFunction = (optiions: CommandRunOptions) => any;
+type CommandRunFunction = (options: CommandRunOptions) => any;
 type SlashCommandAutocompleteFunction = (options: SlashCommandAutocompleteOptions) => any;
 
 export type SlashCommandType = {
   data: Omit<SlashCommandBuilder, "addSubcommandGroup" | "addSubcommand"> | SlashCommandSubcommandsOnlyBuilder
   aliases?: string[]
-  botperms?: CommandPerms[]
-  memberperms?: CommandPerms[]
+  botperms: CommandPerms[]
+  memberperms: CommandPerms[]
   timeout?: number
   run: SlashCommandRunFunction
   autocomplete?: SlashCommandAutocompleteFunction

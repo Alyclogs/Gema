@@ -1,5 +1,5 @@
 import { PermissionResolvable } from "discord.js"
-import { ArArgsType } from "../models/autoresponder-model"
+import { ArArgsType } from "../models/gema-models"
 
 export const ErrorCodes = {
     EMPTY_RESPONSE_ERROR: 'No especificaste una respuesta para el autoresponder',

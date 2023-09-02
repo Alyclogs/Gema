@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Client, EmbedBuilder, ColorResolvable, TextChannel } from 'discord.js';
-import { model as embedModel, EmbedDataType } from '../../../models/embed-model';
+import { embedModel, EmbedDataType } from '../../../models/gema-models';
 import { variables } from '../../../botdata/Variables';
 import { createEmbedPagination } from '../../../util/Pagination';
 import { Permissions } from '../../../util/Permissions';
@@ -115,8 +115,6 @@ export default new SlashCommand({
 
         const subcommad = interaction.options.getSubcommand()
         const scg = interaction.options.getSubcommandGroup()
-        const varis = variables(interaction).totalvars()
-
         client.embeds = await embedModel.find({}).exec()
 
         const embedName = interaction.options.getString('name') || interaction.options.getString('embed')
