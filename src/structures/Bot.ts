@@ -1,15 +1,17 @@
-import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, ColorResolvable, GatewayIntentBits, HexColorString, ModalBuilder } from 'discord.js';
+import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, ColorResolvable, GatewayIntentBits, ModalBuilder } from 'discord.js';
 import { join } from 'path';
 import fs from 'fs';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import config from '../config.json';
 import { CommandType, SlashCommandType, RegisterCommandsOptions } from '../typing/Command';
-import emojis from '../botdata/emojis.json'
+import emojis from '../util/emojis.json'
 import { Event } from '../typing/Event';
 import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, GSelectMenu } from '../models/gema-models'
+import Functions from '../util/functions';
 
 export default class Bot extends Client {
+  public config = config
   public commands = new Collection<string, CommandType>()
   public slashCommands = new Collection<string, SlashCommandType>();
   public commandsArray: ApplicationCommandDataResolvable[] = [];
@@ -24,6 +26,7 @@ export default class Bot extends Client {
   public selectmenus: GSelectMenu[] = []
   public messages: GMessage[] = []
   public modals: ModalBuilder[] = []
+  public functions: Functions
 
   constructor() {
     super({
@@ -37,6 +40,7 @@ export default class Bot extends Client {
       ],
       allowedMentions: { parse: ['users', 'roles'], repliedUser: false }
     })
+    this.functions = new Functions(this)
   }
 
   public start() {
@@ -47,7 +51,8 @@ export default class Bot extends Client {
 
     this.importEvents();
     this.importCommands();
-    this.importSlashCommands(true);
+    this.importSlashCommands();
+    this.importComponents();
   }
 
   private async importEvents() {
@@ -60,13 +65,21 @@ export default class Bot extends Client {
       const event: Event<keyof ClientEvents> = (await import(filePath))?.default;
 
       if (event.data.once) {
-        this.once(event.data.name, (...args) =>
-          event.run(this, ...args)
-        );
+        this.once(event.data.name, (...args) => {
+          try {
+            event.run(this, ...args)
+          } catch (err) {
+            this.functions.sendGemaError(err as Error)
+          }
+        });
       } else {
-        this.on(event.data.name, (...args) =>
-          event.run(this, ...args)
-        );
+        this.on(event.data.name, (...args) => {
+          try {
+            event.run(this, ...args)
+          } catch (err) {
+            this.functions.sendGemaError(err as Error)
+          }
+        });
       }
     }
   }
@@ -90,7 +103,7 @@ export default class Bot extends Client {
     console.log(`[✅] Comandos cargados`);
   }
 
-  private async importSlashCommands(register: boolean, guildID?: string | undefined) {
+  private async importSlashCommands(register?: boolean | undefined, guildID?: string | undefined) {
     const commandFolders = fs
       .readdirSync(join(__dirname, '../commands/slashCommands'))
 
@@ -121,6 +134,7 @@ export default class Bot extends Client {
   private async registerCommands({ commands, guildId }: RegisterCommandsOptions) {
     const rest = new REST({ version: '9' }).setToken(process.env.token);
     if (guildId) {
+      console.log(guildId)
       rest
         .put(
           Routes.applicationGuildCommands(config.clientID, process.env.guildId),
@@ -143,11 +157,38 @@ export default class Bot extends Client {
     }
   }
 
+  private async importComponents() {
+    const buttonFiles = fs
+      .readdirSync(join(__dirname, '../components/buttons'))
+
+    for (const file of buttonFiles) {
+      const filePath = `../components/buttons/${file}`;
+      const button: GButton = (await import(filePath))?.default;
+
+      if (button) {
+        this.buttons.set(button.customId, button);
+      } else console.log(`El botón ${file} no está configurado`)
+    }
+
+    /*
+    const selmFiles = fs
+      .readdirSync(join(__dirname, '../components/selectmenus'))
+
+    for (const file of selmFiles) {
+      const filePath = `../components/selectmenus/${file}`;
+      const selectmenu: GSelectMenu = (await import(filePath)).default;
+
+      this.selectmenus.push(selectmenu)
+    }
+    */
+  }
+
   public async syncButtons() {
     this.buttons.sweep(() => true)
     const buttons = await buttonModel.find({}).exec()
     for (let button of buttons) {
       this.buttons.set(button.customId, button)
     }
+    await this.importComponents()
   }
 }

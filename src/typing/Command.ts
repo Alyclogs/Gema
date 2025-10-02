@@ -1,6 +1,6 @@
-import { ApplicationCommandDataResolvable, AutocompleteInteraction, ButtonInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, Message, PermissionResolvable, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "discord.js";
+import { ApplicationCommandDataResolvable, AutocompleteInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, Message, MessageComponentInteraction, PermissionResolvable, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, StringSelectMenuInteraction } from "discord.js";
 import Bot from "../structures/Bot";
-import emojis from "../botdata/emojis.json"
+import emojis from "../util/emojis.json"
 
 interface SlashCommandRunOptions {
   client: Bot;
@@ -18,10 +18,9 @@ interface SlashCommandAutocompleteOptions {
   emojis: typeof emojis;
 }
 
-export interface ButtonRunOptions {
+export interface ComponentRunOptions {
   client: Bot
-  interaction: ButtonInteraction
-  args: CommandInteractionOptionResolver
+  interaction: MessageComponentInteraction
   color: ColorResolvable
   emojis: typeof emojis;
 }
@@ -31,7 +30,8 @@ interface CommandRunOptions {
   message: Message;
   args: string[];
   color: ColorResolvable
-  emojis: typeof emojis;
+  emojis: typeof emojis
+  prefix: string
 }
 
 export type CommandPerms = {

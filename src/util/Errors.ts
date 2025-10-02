@@ -13,7 +13,7 @@ export const ErrorCodes = {
     INVALID_EMBED_DATA_ERROR: 'El color o la descripcion para el embed no es válido',
     INVALID_PERM_ERROR: 'El permiso para la función \`requireperm\` no es válido. Selecciona un rol en \`Ajustes del servidor > Roles\` para visualizar los permisos válidos',
     INVALID_FONT_ERROR: 'La fuente para la función \`font\` no es válida',
-    INVALID_TIME_FORMAT: 'El tiempo para la función \`delete_reply\` debe ser un número. Ejemplo: \`{delete_reply:1}\`',
+    INVALID_TIME_FORMAT: 'El tiempo para la función \`deletereply\` debe ser un número. Ejemplo: \`{deletereply:1}\`',
     INVALID_RANGE: 'El rango para la función range no es válido. Uso: \`{range<número>:<1er número>-<2do número>}\`. Ejemplos: \`{range:1-50}\`, \`{range2:1-1000}\`',
     INVALID_CHOICES: 'Las opciones o el índice para la función \`choose\` no son válidos. Uso: \`{choose<número>:<opcion1>|<opcion2>|<opcion3>}\`.',
     INVALID_CHOICEVALUES: 'Los valores o el índice para la función \`choicevalues\` no son válidos. Uso: \`{choicevalues<número>:<valor1>|<valor2>|<valor3>}\`',

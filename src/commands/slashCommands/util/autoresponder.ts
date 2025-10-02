@@ -1,8 +1,8 @@
 import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js'
 import { Autoresponder, autoresponderModel, embedModel } from '../../../models/gema-models'
 import { Permissions, Permissions2 } from '../../../util/Permissions'
-import { ErrorCodes } from '../../../botdata/Errors'
-import { matches } from '../../../botdata/Variables.js'
+import { ErrorCodes } from '../../../util/Errors'
+import { matches } from '../../../util/Variables.js'
 import { createEmbedPagination } from '../../../util/Pagination'
 import { SlashCommand } from '../../../structures/Command.js'
 import ExtendedInteraction from '../../../typing/ExtendedInteraction.js'
@@ -79,6 +79,7 @@ export default new SlashCommand({
 
     async run({ interaction, client, args, color, emojis }) {
         await interaction.deferReply()
+        client.functions.setInput(interaction)
 
         const subcommand = args.getSubcommand()
         const trigger = args.getString('trigger')
@@ -154,11 +155,10 @@ export default new SlashCommand({
             } else {
 
                 if (reply && matchmode) {
-                    const { replaceVars, createAutoresponder } = (await import('../../../util/functions.js'))?.default(client, interaction)
                     let autoresponder: Autoresponder | undefined = undefined
 
                     try {
-                        autoresponder = (await createAutoresponder(interaction as any, reply)).setTrigger(trigger)
+                        autoresponder = (await client.functions.createAutoresponder(interaction as ExtendedInteraction, reply)).setTrigger(trigger)
                     } catch (e) {
                         return interaction.editReply(`${emojis.error} ${e}`)
                     }
@@ -167,12 +167,10 @@ export default new SlashCommand({
                         const arTrigger = autoresponder.arTrigger
                         const arReply = autoresponder.arReply
                         arTrigger.triggerkey = trigger
-                        arReply.replymessage = reply
                         arReply.rawreply = reply
                         let cooldown = autoresponder.cooldown
 
-                        previewReply = replaceVars(arReply.rawreply).replace(/\\n/g, '\n').trim()
-                        arReply.replymessage = arReply.replymessage?.trim()
+                        previewReply = client.functions.replaceVars(arReply.rawreply).replace(/\\n/g, '\n').trim()
                         arReply.rawreply = arReply.rawreply.trim()
                         if (!previewReply?.replace(/\s/g, '').length) previewReply = ''
 

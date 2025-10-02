@@ -48,7 +48,7 @@ export default new SlashCommand({
 
     async autocomplete({ interaction, args, client }) {
         await client.syncButtons()
-        const buttonNames = client.buttons.map(b => b.name)
+        const buttonNames = client.buttons.map(b => b.name).filter(b => b !== '')
 
         try {
             const focusedValue = args.getFocused()
@@ -66,6 +66,7 @@ export default new SlashCommand({
 
     async run({ interaction, client, args, color, emojis }) {
         await interaction.deferReply()
+        client.functions.setInput(interaction)
 
         await client.syncButtons()
         const buttonName = args.getString('name') || args.getString('button')
@@ -108,12 +109,11 @@ export default new SlashCommand({
                 let reply = args.getString('reply')
                 let ephemeral = args.getBoolean('ephemeral')
 
-                const { createAutoresponder } = (await import('../../../util/functions'))?.default(client, interaction)
                 if (!reply) return await interaction.editReply(`${emojis.confused} Debes especificar una respuesta para el botón`)
                 let ar: Autoresponder | undefined = undefined
 
                 try {
-                    ar = await createAutoresponder(interaction as ExtendedInteraction, reply)
+                    ar = await client.functions.createAutoresponder(interaction as ExtendedInteraction, reply)
                 } catch (e) { return interaction.editReply(`${e}`) }
 
                 if (ar) await buttonModel.updateOne(buttonData, { reply: ar.arReply, ephemeral: ephemeral || false })

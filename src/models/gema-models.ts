@@ -1,7 +1,7 @@
 import mongoose, { mongo } from 'mongoose';
 import { bot } from '..'
-import { ButtonBuilder, ColorResolvable, ComponentType, Message, SelectMenuComponentOptionData, StringSelectMenuComponentData } from 'discord.js'
-import { ButtonRunOptions } from '../typing/Command'
+import { ButtonBuilder, ColorResolvable, ComponentType, Message, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuComponentData } from 'discord.js'
+import { ComponentRunOptions } from '../typing/Command'
 
 class Autoresponder {
     guildId: string = ''
@@ -63,9 +63,9 @@ class GButton {
     }
     ephemeral?: boolean
     reply?: ArReplyType
-    run?: ((options: ButtonRunOptions) => any) | Message
+    run?: (options: ComponentRunOptions) => Promise<any>
 
-    setData(guildId: string, data: { customId: string, style: number, label: string, name?: string, emoji?: string }): this {
+    setData(guildId: string, data: { customId: string, style: number, label: string, name?: string, emoji?: string }): GButton {
         this.guildId = guildId
         this.customId = data.customId || 'GButton' + (this.contador + 1)
         this.data.style = data.style || 1
@@ -74,6 +74,15 @@ class GButton {
         if (data.emoji) this.data.emoji = data.emoji
 
         return this
+    }
+
+    getButton(): ButtonBuilder {
+        let discordBtn = new ButtonBuilder()
+            .setCustomId(this.customId)
+            .setStyle(this.data.style)
+            .setLabel(this.data.label)
+        if (this.data.emoji) discordBtn.setEmoji(this.data.emoji)
+        return discordBtn;
     }
 }
 
@@ -87,7 +96,17 @@ class GSelectMenu {
     }
     ephemeral?: boolean
     reply?: ArReplyType
-    run?: ((options: ButtonRunOptions) => any) | Message
+    run?: (options: ComponentRunOptions) => Promise<any>
+}
+
+class GModal {
+    constructor(modalOptions: GModalType) {
+        Object.assign(this, modalOptions)
+    }
+}
+
+type GModalType = ModalBuilder & {
+    run?: (options: ComponentRunOptions) => Promise<any>
 }
 
 class GMessage {
@@ -169,14 +188,19 @@ enum ArSendingType {
     user_dm = "user_dm"
 }
 
-type ArChoiceType = {
+export type ArChoiceType = {
     ind: number,
     options: ArChoiceOptionsType[]
 }
 
-type ArChoiceOptionsType = {
+export type ArChoiceOptionsType = {
     ind: number,
     option: string
+}
+
+export type ArChoicedOptionType = {
+    ind: number,
+    option: ArChoiceOptionsType
 }
 
 type ArAddRemoveRoleType = {
@@ -241,12 +265,13 @@ enum ArMatchMode {
 
 type GStringSelectMenuData =
     Omit<StringSelectMenuComponentData, "options"> &
-    {
-        options?: (SelectMenuComponentOptionData & {
-            reply?: ArReplyType,
-            run?: ((options: ButtonRunOptions) => any) | Message
-        })[]
-    };
+    { options?: GSelectMenuOption[] };
+
+type GSelectMenuOption = (SelectMenuComponentOptionData & {
+    index?: number,
+    reply?: ArReplyType,
+    run?: ((options: ComponentRunOptions) => any) | Message
+})
 
 const autoresponder = new mongoose.Schema({
     guildId: { type: String, required: true },
@@ -313,6 +338,7 @@ const selectmenus = new mongoose.Schema<GSelectMenu>({
     customId: { type: String, required: true },
     name: { type: String, required: true },
     data: {},
+    reply: {},
     ephemeral: Boolean
 })
 
@@ -322,4 +348,4 @@ const selectmenuModel = mongoose.model<GSelectMenu>('selectmenus', selectmenus)
 const embedModel = mongoose.model<GEmbed>('embeds', embeds)
 const autoresponderModel = mongoose.model<Autoresponder>('autoresponders', autoresponder)
 
-export { Autoresponder, ArReplyType, ArTriggerType, GButton, GMessage, GEmbed, GSelectMenu, buttonModel, messageModel, embedModel, autoresponderModel, selectmenuModel }
+export { Autoresponder, ArReplyType, ArTriggerType, GButton, GMessage, GEmbed, GSelectMenu, GSelectMenuOption, GModal, buttonModel, messageModel, embedModel, autoresponderModel, selectmenuModel }

@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Client, EmbedBuilder, ColorResolvable, TextChannel } from 'discord.js';
 import { embedModel, EmbedDataType } from '../../../models/gema-models';
-import { variables } from '../../../botdata/Variables';
+import { variables } from '../../../util/Variables';
 import { createEmbedPagination } from '../../../util/Pagination';
 import { Permissions } from '../../../util/Permissions';
 import { SlashCommand } from '../../../structures/Command';
@@ -112,6 +112,7 @@ export default new SlashCommand({
 
     async run({ interaction, client, color, emojis }) {
         await interaction.deferReply()
+        client.functions.setInput(interaction);
 
         const subcommad = interaction.options.getSubcommand()
         const scg = interaction.options.getSubcommandGroup()
@@ -176,8 +177,7 @@ export default new SlashCommand({
                 return interaction.editReply(`${client.emotes['hmph']} No existe un embed con ese nombre`)
             } else {
                 embedData = embedFound.data
-                const { replaceEmbedFields, replaceVars } = (await import('../../../util/functions'))?.default(client, interaction)
-                let previewEmbed = embedData ? replaceEmbedFields(embedData) : new EmbedBuilder().setColor(client.color)
+                let previewEmbed = embedData ? client.functions.replaceEmbedFields(embedData) : new EmbedBuilder().setColor(client.color)
 
                 if (subcommad === 'show') {
                     await (interaction.channel as TextChannel).send({
@@ -190,15 +190,26 @@ export default new SlashCommand({
                         const author = interaction.options.getString('text')
                         const icon = interaction.options.getString('icon')
 
-                        const prevauthor = author ? replaceVars(author) : undefined
-                        const previcon = icon ? replaceVars(icon) : undefined
+                        const prevauthor = author ? client.functions.replaceVars(author) : undefined
+                        const previcon = icon ? client.functions.replaceVars(icon) : undefined
+                        console.log(prevauthor, previcon);
 
                         if (icon && previcon) {
                             if (!icon.startsWith('https://') && !previcon.startsWith('https://')) {
                                 return interaction.editReply(`${emojis.hmph} El ícono no es un link válido, utiliza {user_avatar} o {server_icon} en su lugar`)
                             }
                         }
-                        previewEmbed.setAuthor({ name: prevauthor || author || '', iconURL: previcon || icon || undefined })
+
+                        const authorName = prevauthor || author || ''
+                        const iconURL = (previcon && previcon.trim() !== '') ? previcon :
+                            (icon && icon.trim() !== '') ? icon : undefined
+
+                        const finalIconURL = iconURL && (iconURL.startsWith('https://') || iconURL.startsWith('http://')) ? iconURL : undefined
+
+                        previewEmbed.setAuthor({
+                            name: authorName,
+                            iconURL: finalIconURL
+                        })
                         await embedModel.updateOne(data, { 'data.author': { name: author || '', icon_url: icon || '' } })
                         return await interaction.editReply({
                             content: (`${emojis.check}` + (author ? ` Autor actualizado` : ` Autor removido`)),
@@ -208,7 +219,7 @@ export default new SlashCommand({
                     }
                     if (subcommad === 'title') {
                         const title = interaction.options.getString('title') || undefined
-                        const prevTitle = title ? replaceVars(title) : undefined
+                        const prevTitle = title ? client.functions.replaceVars(title) : undefined
 
                         previewEmbed.data.title = prevTitle || title
                         await embedModel.updateOne(data, { 'data.title': title || '' })
@@ -222,7 +233,7 @@ export default new SlashCommand({
                         let desc = interaction.options.getString('description') || undefined
 
                         if (desc) desc = desc.replace(/\\n/g, '\n')
-                        const prevDesc = desc ? replaceVars(desc) : undefined
+                        const prevDesc = desc ? client.functions.replaceVars(desc) : undefined
 
                         previewEmbed.data.description = prevDesc || desc
                         await embedModel.updateOne(data, { 'data.description': desc || '' })
@@ -234,7 +245,7 @@ export default new SlashCommand({
                     }
                     if (subcommad === 'color') {
                         const color = interaction.options.getString('color')
-                        const prevColor = color ? replaceVars(color) : client.color
+                        const prevColor = color ? client.functions.replaceVars(color) : client.color
 
                         if (color && prevColor) {
                             if (!/^#([0-9a-f]{6})/i.test(color) && !/^#([0-9a-f]{6})/i.test(prevColor as string)) {
@@ -252,7 +263,7 @@ export default new SlashCommand({
                     }
                     if (subcommad === 'thumbnail') {
                         const link = interaction.options.getString('link')
-                        const prevThumb = link ? replaceVars(link) : null
+                        const prevThumb = link ? client.functions.replaceVars(link) : null
                         console.log(link)
 
                         if (link && prevThumb) {
@@ -271,7 +282,7 @@ export default new SlashCommand({
                     }
                     if (subcommad === 'image') {
                         const link = interaction.options.getString('link')
-                        const prevImg = link ? replaceVars(link) : null
+                        const prevImg = link ? client.functions.replaceVars(link) : null
 
                         if (link && prevImg) {
                             if (!prevImg.startsWith('https://') && !link.startsWith('https://')) {
@@ -292,8 +303,8 @@ export default new SlashCommand({
                         const text = interaction.options.getString('text')
                         const icon = interaction.options.getString('icon')
 
-                        let prevtext = text ? replaceVars(text) : undefined
-                        let previcon = icon ? replaceVars(icon) : undefined
+                        let prevtext = text ? client.functions.replaceVars(text) : undefined
+                        let previcon = icon ? client.functions.replaceVars(icon) : undefined
 
                         if (icon && previcon) {
                             if (!previcon.startsWith('https://') && !icon.startsWith('https://')) {

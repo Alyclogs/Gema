@@ -1,7 +1,7 @@
-import { ActionRowBuilder, ButtonBuilder, ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder } from 'discord.js';
+import { ButtonBuilder, ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder } from 'discord.js';
 import { SlashCommand } from '../../../structures/Command';
 import { Permissions } from '../../../util/Permissions'
-import { GMessage, messageModel, buttonModel } from '../../../models/gema-models'
+import { GMessage, messageModel, buttonModel, selectmenuModel } from '../../../models/gema-models'
 import { createEmbedPagination } from '../../../util/Pagination'
 import { bot } from '../../..';
 import ExtendedInteraction from '../../../typing/ExtendedInteraction';
@@ -11,12 +11,12 @@ import ExtendedInteraction from '../../../typing/ExtendedInteraction';
 export default new SlashCommand({
     data: new SlashCommandBuilder()
         .setName('message')
-        .setDescription('Crea o administra los mensajes del servidor, puedes añadirles botones y menús')
+        .setDescription('Crea o administra los mensajes del servidor, puedes añadirles botones y menús de selección')
         .addSubcommand(subcommand =>
             subcommand
                 .setName('show')
                 .setDescription('Muestra un mensaje')
-                .addStringOption(option => option.setName('name').setDescription('El nombre del mensaje').setRequired(true)))
+                .addStringOption(option => option.setName('name').setDescription('El nombre del mensaje').setRequired(true).setAutocomplete(true)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('create')
@@ -79,7 +79,10 @@ export default new SlashCommand({
     async run({ interaction, client, args, color, emojis }) {
         if (!interaction.guild) return
         await interaction.deferReply({ ephemeral: true })
+        client.functions.setInput(interaction)
 
+        await client.syncButtons()
+        client.selectmenus = await selectmenuModel.find({}).exec()
         client.messages = await messageModel.find({}).exec()
 
         const subcommand = args.getSubcommand()
@@ -131,28 +134,9 @@ export default new SlashCommand({
         }
         if (group === 'attach' || subcommand === 'edit-content' || subcommand === 'show') {
             if (!messagef) return await interaction.editReply(`${emojis.hmph} No existe un mensaje con ese nombre. Créalo con /message create`)
-            const { replaceVars, createAutoresponder, executeReply } = (await import('../../../util/functions'))?.default(client, interaction)
+            const { createAutoresponder, executeReply } = client.functions
 
-            let prevButtons: ButtonBuilder[] = []
-            let allbtns: string[] = []
-
-            if (messagef.reply && messagef.reply.buttons?.length) {
-                messagef.reply.buttons.forEach(async (boton) => {
-                    let btnf = await buttonModel.findOne({ guildId: interaction.guild?.id, name: boton }).exec()
-
-                    if (btnf) {
-                        allbtns.push(btnf.name)
-                        let btn = new ButtonBuilder()
-                            .setCustomId(btnf.customId)
-                            .setLabel(btnf.data.label)
-                            .setStyle(btnf.data.style)
-                        if (btnf.data.emoji) btn.setEmoji(btnf.data.emoji)
-                        prevButtons.push(btn)
-                    } else console.log('boton no se encontro')
-                })
-            }
-
-            if (subcommand == 'show') {
+            if (subcommand === 'show') {
                 if (messagef.reply) {
                     await interaction.editReply(`Enviando mensaje...`)
                     await executeReply(messagef.reply, interaction as ExtendedInteraction)
@@ -164,34 +148,64 @@ export default new SlashCommand({
                 let content = args.getString('content')
                 if (!content) return await interaction.editReply(`${emojis.confused} Debes especificar un contenido para el mensaje`)
 
+                if (messagef.reply) {
+                    if (messagef.reply.buttons?.length) {
+                        for (let btn of messagef.reply.buttons) {
+                            content += ` {button:${btn}}`
+                        }
+                    }
+                    if (messagef.reply.selectmenus?.length) {
+                        for (let sel of messagef.reply.selectmenus) {
+                            content += ` {selectmenu:${sel}}`
+                        }
+                    }
+                }
                 const ar = await createAutoresponder(interaction as ExtendedInteraction, content)
+
                 if (ar) {
-                    await messageModel.updateOne(messageData, { reply: ar.arReply })
+                    messagef.reply = ar.arReply
+                    await messageModel.updateOne(messageData, { reply: messagef.reply })
                     await interaction.editReply({ content: `${emojis.check} Contenido editado, enviando previsualización...` })
-                    await executeReply(ar.arReply, interaction as ExtendedInteraction)
+                    await executeReply(messagef.reply, interaction as ExtendedInteraction)
                 }
             }
             if (subcommand === 'button') {
                 let button = args.getString('button-name')
                 if (!button) return await interaction.editReply(`${emojis.confused} Debes especificar el nombre del botón que quieres añadir`)
-                if (!client.buttons.get(`arbnt_${button}`)) return await interaction.editReply(`${emojis.confused} El botón no existe, créalo con /button create`)
+                if (!client.buttons.get(`arbtn_${button}`)) return await interaction.editReply(`${emojis.confused} El botón no existe, créalo con /button create`)
+                if (messagef.reply?.buttons?.length && messagef.reply.buttons.find(b => b === button)) return await interaction.editReply(`${emojis.angry} El mensaje ya tiene adjunto ese botón`)
+
+                if (!messagef.reply) {
+                    const ar = await createAutoresponder(interaction as ExtendedInteraction, ` {button:${button}}`)
+                    if (ar) messagef.reply = ar.arReply
+
+                } else messagef.reply.rawreply = messagef.reply.rawreply + ` {button:${button}}`
 
                 if (messagef.reply) {
-                    messagef.reply.rawreply = `${messagef.reply.rawreply} + {button:${button}}`
+                    await messageModel.updateOne(messageData, { reply: messagef.reply })
                     await interaction.editReply({ content: `${emojis.check} Botón añadido, enviando previsualización...` })
                     await executeReply(messagef.reply, interaction as ExtendedInteraction)
-                }
+
+                } else throw new Error('No se ha podido adjuntar el botón')
             }
             if (subcommand === 'selectmenu') {
                 let selectmenu = args.getString('selectmenu-name')
                 if (!selectmenu) return await interaction.editReply(`${emojis.confused} Debes especificar el nombre del menú de selección que quieres añadir`)
-                if (!client.selectmenus.find(sm => sm.customId === `arselm_${selectmenu}`)) return await interaction.editReply(`${emojis.confused} El menú de selección especificado no existe, créalo con /selectmenu create`)
+                if (!client.selectmenus.find(sm => sm.customId === `arselm#${selectmenu}`)) return await interaction.editReply(`${emojis.confused} El menú de selección especificado no existe, créalo con /selectmenu create`)
+                if (messagef.reply?.selectmenus?.length && messagef.reply.selectmenus.find(b => b === selectmenu)) return await interaction.editReply(`${emojis.angry} El mensaje ya tiene adjunto ese menú de selección`)
+
+                if (!messagef.reply) {
+                    const ar = await createAutoresponder(interaction as ExtendedInteraction, `{selectmenu:${selectmenu}}`)
+                    if (ar) messagef.reply = ar.arReply
+
+                } else messagef.reply.rawreply = messagef.reply.rawreply + `{selectmenu:${selectmenu}}`
 
                 if (messagef.reply) {
-                    messagef.reply.rawreply = `${messagef.reply.rawreply} + {selectmenu:${selectmenu}}`
+                    await messageModel.updateOne(messageData, { reply: messagef.reply })
                     await interaction.editReply({ content: `${emojis.check} Menú de selección añadido, enviando previsualización...` })
                     await executeReply(messagef.reply, interaction as ExtendedInteraction)
-                }
+
+                } else throw new Error('No se ha podido adjuntar el menú de selección')
             }
         }
     }

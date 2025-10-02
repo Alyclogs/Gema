@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ColorResolvable, Message, PermissionResolvable, time } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvable, Message, PermissionResolvable, time } from "discord.js";
 import Bot from "../structures/Bot";
 import { Event } from "../typing/Event";
 import { BoostSettings, FarewellSettings, model as serverconfig, ServerConfig, WelcomerSettings } from "../models/serverconfig-model"
@@ -6,7 +6,6 @@ import { model as usermodel } from "../models/user-currency"
 import config from "../config.json"
 import ExtendedMessage from "../typing/ExtendedMessage";
 import { model as chatbotModel, Chatbot } from "../models/chatbot-model";
-import { OpenAI } from "openai";
 import { autoresponderModel, embedModel } from "../models/gema-models";
 
 export default new Event({
@@ -91,13 +90,16 @@ export default new Event({
                 setTimeout(() => client.timeouts.delete(cooldownData), timeout * 1000)
                 setTimeout(() => client.nsfwgifs = [], 180e3)
 
-                if (command.run) command.run({
-                    client: client as Bot,
-                    message: message as Message,
-                    args: args as string[],
-                    color: client.color as ColorResolvable,
-                    emojis: client.emotes
-                })
+                if (command.run) {
+                    command.run({
+                        client: client as Bot,
+                        message: message as Message,
+                        args: args as string[],
+                        color: client.color as ColorResolvable,
+                        emojis: client.emotes,
+                        prefix: prefix
+                    })
+                }
             }
         }
 
@@ -105,35 +107,16 @@ export default new Event({
         if (chatbotData) {
             if (chatbotData.channelId) {
                 if (channel.id === chatbotData.channelId) {
-                    let cont = chatbotData.nPrompts || 0;
-                    if (cont == 20) {
-                        channel.send(`${emotes['error']} ¡Lo siento! has llegado al límite de mensajes para hablar conmigo ${emotes['sweat']}`)
-                    } else {
-                        await channel.sendTyping()
-                        const openai = new OpenAI({
-                            apiKey: process.env.OPENAI_API_KEY
-                        })
-                        let prompt = chatbotData.prompt;
+                    await channel.sendTyping()
+                    let chatbot = new Chatbot();
+                    chatbot.setData(chatbotData.guildId, chatbotData.channelId, chatbotData.chat)
 
-                        prompt += `Human: ${content}\n`;
-                        (async () => {
-                            const gptResponse = await openai.completions.create({
-                                model: 'text-davinci-003',
-                                prompt: prompt,
-                                max_tokens: 2000,
-                                temperature: 0.3,
-                                top_p: 1,
-                                presence_penalty: 0,
-                                frequency_penalty: 0.5
-                            });
-                            try {
-                                channel.send(`${gptResponse.choices[0].text?.replace('Gema:', '')}`)
-                                prompt += `${gptResponse.choices[0].text}\n`;
-                                cont++;
-                                await chatbotModel.findOneAndUpdate({ guildId: guild.id, channelId: channel.id }, { prompt: prompt, nPrompts: cont })
-                            } catch (e) {
-                            }
-                        })();
+                    try {
+                        const response = await chatbot.ask(content, author.username);
+                        await message.reply(response);
+                        await chatbotModel.findOneAndUpdate({ guildId: guild.id, channelId: channel.id }, { chat: chatbot.chat })
+                    } catch (e) {
+                        return await channel.send(`${emotes.sweat} Ha ocurrido un error: \`${e}\``);
                     }
                 }
             }
@@ -165,7 +148,11 @@ export default new Event({
         }
 
         if (guildars && autoresponder) {
-            const { executeAutoresponder } = (await import('../util/functions'))?.default(client, message)
-            await executeAutoresponder(autoresponder, message)
+            client.functions.setInput(message)
+            try {
+                await client.functions.executeAutoresponder(autoresponder, message)
+            } catch (e) {
+                return await message.channel.send(`${emotes.error} ${(e as Error).message}`);
+            }
         }
     })

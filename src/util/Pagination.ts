@@ -1,8 +1,7 @@
 import { Pagination } from 'pagination.djs';
 import { color } from '../config.json';
 import { ChatInputCommandInteraction, ColorResolvable, EmbedBuilder, Message } from 'discord.js';
-
-import emojis from '../botdata/emojis.json';
+import emojis from '../util/emojis.json';
 
 export function createEmbedPagination(interaction: ChatInputCommandInteraction<"cached"> | Message, embeds: EmbedBuilder[]) {
     const pagination = new Pagination(interaction);

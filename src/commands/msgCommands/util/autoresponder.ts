@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js'
 import { embedModel, autoresponderModel, Autoresponder, ArReplyType, ArTriggerType } from '../../../models/gema-models'
-import { Permissions, Permissions2 } from '../../../util/Permissions'
-import { ErrorCodes } from '../../../botdata/Errors'
+import { Permissions } from '../../../util/Permissions'
+import { ErrorCodes } from '../../../util/Errors'
 import { createEmbedPagination } from '../../../util/Pagination'
 import { Command } from '../../../structures/Command'
 import ExtendedMessage from '../../../typing/ExtendedMessage'
@@ -16,7 +16,7 @@ export default new Command({
         {
             name: 'add',
             description: 'Crea un nuevo autoresponder'
-                + '\n`gema help ar <subcomando>` para obtener más ayuda'
+                + '\n`gema help ar add <matchmode>` para obtener más ayuda'
                 + '\nPuedes hacer uso de las variables de autoresponder para la respuesta: </variables:>'
                 + '\nMatchmodes disponibles: \`--1\` exacto, \`--2\` al principio, \`--3\` al final, \`--4\` incluye'
                 + '\nSi no se especifica el matchmode, se creará un autoresponder con modo de coincidencia exacto',
@@ -31,33 +31,33 @@ export default new Command({
                 {
                     name: '--2',
                     description: 'Crea un nuevo autoresponder con modo de coincidencia del trigger al principio'
-                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger al principio del mensaje',
+                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger al principio de su mensaje',
                     uso: '`gema ar add --2 <trigger> | <reply>`',
                 },
                 {
                     name: '--3',
                     description: 'Crea un nuevo autoresponder con modo de coincidencia del trigger al final.'
-                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger al final del mensaje',
+                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger al final de su mensaje',
                     uso: '`gema ar add --3 <trigger> | <reply>`',
                 },
                 {
                     name: '--4',
                     description: 'Crea un nuevo autoresponder con modo de coincidencia que incluya al trigger'
-                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger en cualquier parte del mensaje',
+                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger en cualquier parte de su mensaje',
                     uso: '`gema ar add --4 <trigger> | <reply>`',
                 }
             ]
         },
         {
-            name: 'edit-reply',
+            name: 'edit_reply',
             description: 'Edita la respuesta de un autoresponder',
-            uso: '`gema ar edit-reply <trigger> | <reply>`'
+            uso: '`gema ar edit_reply <trigger> | <reply>`'
         },
         {
-            name: 'edit-matchmode',
+            name: 'edit_matchmode',
             description: 'Edita el modo de coincidencia de un autoresponder',
             uso: '`gema ar edit-matchmode <trigger> <matchmode>\nMatchmodes disponibles: \`--1\` exacto, \`--2\` al principio, \`--3\` al final, \`--4\` incluye'
-                + '\nEjemplos: gema ar edit-matchmode !request --1 (matchmode exacto)'
+                + '\nEjemplos: gema ar edit_matchmode !request --1 (matchmode exacto)'
         },
         {
             name: 'remove',
@@ -84,6 +84,7 @@ export default new Command({
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces, Permissions.gestionarServidor],
 
     async run({ message, client, args, color, emojis }) {
+        client.functions.setInput(message as ExtendedMessage)
 
         let subcommand = args[0]
         let trigger: string
@@ -103,6 +104,7 @@ export default new Command({
             .setColor(color)
         let previewReply: string | undefined = ""
 
+        if (!subcommand) return
         if (subcommand === 'list') {
             if (client.autoresponders.filter(ar => ar.guildId === message.guild?.id).length) {
                 let artriggers = client.autoresponders.filter((autr) => autr.guildId === message.guild?.id).map(function (autr) {
@@ -134,7 +136,6 @@ export default new Command({
                 return await message.reply(`${emojis.check} Se han eliminado todos los autoresponder del servidor`)
             }
         }
-        const { replaceVars, createAutoresponder } = (await import('../../../util/functions.js'))?.default(client, message as ExtendedMessage)
 
         let cadena = args.slice(1).join(' ')
         const matchtype = matchmodes.find(m => m.name === cadena.match(/--\d/)?.[0])
@@ -201,7 +202,7 @@ export default new Command({
                 }
 
                 try {
-                    autoresponder = (await createAutoresponder(message, reply)).setTrigger(trigger)
+                    autoresponder = (await client.functions.createAutoresponder(message, reply)).setTrigger(trigger)
                 } catch (e) {
                     return message.reply(`${emojis.error} ${e}`)
                 }
@@ -213,7 +214,7 @@ export default new Command({
 
                 arReply.replymessage = arReply.replymessage?.trim()
                 arReply.rawreply = arReply.rawreply.trim()
-                previewReply = replaceVars(arReply.rawreply).replace(/\\n/g, '\n').trim()
+                previewReply = client.functions.replaceVars(arReply.rawreply).replace(/\\n/g, '\n').trim()
                 if (!previewReply?.replace(/\s/g, '').length) previewReply = ''
 
                 if (!arReply || !arTrigger || !matchmode) return

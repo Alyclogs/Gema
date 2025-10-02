@@ -4,6 +4,7 @@ declare global {
             token: string;
             guildId: string;
             mongourl: string;
+            hugging_face_token: string;
             environment: "dev" | "prod" | "debug";
         }
     }

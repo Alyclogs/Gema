@@ -2,7 +2,7 @@ import { Message, ChatInputCommandInteraction, GuildMember, User, BaseInteractio
 
 export type VariableType = {
     name: string,
-    value: string
+    value: string | null | undefined
 }
 
 const variables = (input: Message | ChatInputCommandInteraction | GuildMember | BaseInteraction) => {
@@ -13,47 +13,58 @@ const variables = (input: Message | ChatInputCommandInteraction | GuildMember | 
             vars: [
                 {
                     "name": "{user}",
-                    "value": input instanceof Message ? `<@${input.author.id}>` : `<@${input.user.id}>` || ''
+                    "value": input instanceof Message ? `<@${input.author.id}>` : `<@${input.user.id}>`,
+                    description: "Menciona al usuario"
                 },
                 {
                     "name": "{user_tag}",
-                    "value": input instanceof Message ? input.author.tag : input.user.tag || ''
+                    "value": input instanceof Message ? input.author.tag : input.user.tag,
+                    description: "Muestra el nombre de usuario"
                 },
                 {
                     "name": "{user_name}",
-                    "value": input instanceof Message ? input.author.username : input.user.username || ''
+                    "value": input instanceof Message ? input.author.username : input.user.username,
+                    description: "Muestra el nombre de usuario"
                 },
                 {
                     "name": "{user_avatar}",
-                    "value": input instanceof Message ? input.author?.avatarURL({ size: 1024 }) : input.user?.avatarURL({ size: 1024 }) || ''
+                    "value": input instanceof Message ? input.author?.avatarURL({ size: 1024 }) : input.user?.avatarURL({ size: 1024 }),
+                    description: "Muestra el ávatar del usuario"
                 },
                 {
                     "name": "{user_discrim}",
-                    "value": input instanceof Message ? input.author?.discriminator : input.user?.discriminator || ''
+                    "value": input instanceof Message ? input.author?.discriminator : input.user?.discriminator,
+                    description: "Muestra el nombre del usuario"
                 },
                 {
                     "name": "{user_id}",
-                    "value": input instanceof Message ? input.author?.id : input.user?.id || input.id || ''
+                    "value": input instanceof Message ? input.author?.id : input.user?.id || input.id,
+                    description: "Muestra el id del usuario"
                 },
                 {
                     "name": "{user_nick}",
-                    "value": input instanceof GuildMember ? input?.displayName : (input.member as GuildMember)?.displayName || ''
+                    "value": input instanceof GuildMember ? input?.displayName : (input.member as GuildMember)?.displayName,
+                    description: "Muestra el nick o apodo del usuario"
                 },
                 {
                     "name": "{user_joindate}",
-                    "value": input instanceof GuildMember ? `${input?.joinedAt?.toLocaleDateString()}` : `${(input.member as GuildMember)?.joinedAt?.toLocaleDateString()}` || ''
+                    "value": input instanceof GuildMember ? `${input?.joinedAt?.toLocaleDateString()}` : `${(input.member as GuildMember)?.joinedAt?.toLocaleDateString()}`,
+                    description: "Muestra la fecha en la que el usuario se unió al servidor"
                 },
                 {
                     "name": "{user_createdate}",
-                    "value": input instanceof Message ? `${input.author?.createdAt?.toLocaleDateString()}` : `${input.user?.createdAt?.toLocaleDateString()}` || ''
+                    "value": input instanceof Message ? `${input.author?.createdAt?.toLocaleDateString()}` : `${input.user?.createdAt?.toLocaleDateString()}`,
+                    description: "Muestra la fecha en la que el usuario se unió a Discord"
                 },
                 {
                     "name": "{user_displaycolor}",
-                    "value": input instanceof GuildMember ? input.displayHexColor : (input.member as GuildMember)?.displayHexColor || ''
+                    "value": input instanceof GuildMember ? input.displayHexColor : (input.member as GuildMember)?.displayHexColor,
+                    description: "Muestra el color del usuario"
                 },
                 {
                     "name": "{user_boostsince}",
-                    "value": input instanceof GuildMember ? input.premiumSince : (input.member as GuildMember)?.premiumSince || '**no premium**'
+                    "value": input instanceof GuildMember ? input.premiumSince : (input.member as GuildMember)?.premiumSince || 'sin datos',
+                    description: "Muestra la fecha en la que el usuario ha boosteado el servidor"
                 }]
         },
         server: {
@@ -61,11 +72,11 @@ const variables = (input: Message | ChatInputCommandInteraction | GuildMember | 
             vars: [
                 {
                     "name": "{server_name}",
-                    "value": input.guild?.name || ''
+                    "value": input.guild?.name
                 },
                 {
                     "name": "{server_id}",
-                    "value": input.guild?.id || ''
+                    "value": input.guild?.id
                 },
                 {
                     "name": "{server_membercount}",
@@ -81,7 +92,7 @@ const variables = (input: Message | ChatInputCommandInteraction | GuildMember | 
                 },
                 {
                     "name": "{server_icon}",
-                    "value": input.guild?.iconURL({ size: 1024 }) || ''
+                    "value": input.guild?.iconURL({ size: 1024 })
                 }
             ]
         },
@@ -102,6 +113,7 @@ var functions = [
     {
         name: '{dm}',
         type: 'Tipos de respuesta',
+        restriction: { ar: true },
         description: 'Envía el autoresponder al dm del autor',
         uso: '\`{dm}\`'
     },
@@ -197,6 +209,7 @@ var functions = [
 ]
 
 const matches = {
+    user_avatar: /(?<={user_avatar:).+?(?:(?<=\{)\w*(?=\}).+?)*(?=})/gi,
     requireuser: /(?<={requireuser:).+?(?:(?<=\{)\w*(?=\}).+?)*(?=})/gi,
     sendto: /(?<={sendto:).+?(?:(?<=\{)\w*(?=\}).+?)*(?=})/gi,
     requirechannel: /(?<={requirechannel:).+?(?:(?<=\{)\w*(?=\}).+?)*(?=})/gi,
@@ -223,7 +236,7 @@ const matches = {
 }
 
 function getVars(text: string, startTag: string, endTag: string, entire?: boolean | undefined) {
-    const regex = new RegExp(`${startTag}((?:[^{}]|\\{(?:[^{}]|\\{(?:[^{}]|\\{[^{}]*\\})*[^{}]*\\})*\\})*)${endTag}`, 'g');
+    const regex = new RegExp(`${startTag}((?:[^{}]|\\{(?:[^{}]|\\{(?:[^{}]|\\{[^{}]*\\})*[^{}]*\\})*\\})*)*${endTag}`, 'g');
     const matches = [];
     let match;
 
@@ -234,4 +247,8 @@ function getVars(text: string, startTag: string, endTag: string, entire?: boolea
     return matches;
 }
 
-export { variables, functions, matches, getVars }
+function testArg(arg: string) {
+    return (/\[\$\d+\]|\[\$\d+\-\d+\]|\[\$\d+\+\]|\{(.+)\}|\[range\]|\[range\d+\]|\[choice\]|\[choice\d+\]|\[choicevalue\]|\[choicevalue\d+\]/).test(arg)
+}
+
+export { variables, functions, matches, getVars, testArg }
