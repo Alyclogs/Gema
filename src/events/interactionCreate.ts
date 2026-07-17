@@ -1,9 +1,12 @@
-import { ActionRowBuilder, AutocompleteInteraction, ButtonBuilder, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, ComponentEmojiResolvable, EmbedBuilder, ModalActionRowComponentBuilder, ModalBuilder, PermissionResolvable, StringSelectMenuBuilder, StringSelectMenuComponent, TextInputBuilder, TextInputStyle, time } from 'discord.js';
+import { ActionRowBuilder, AutocompleteInteraction, ButtonBuilder, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, ComponentEmojiResolvable, EmbedBuilder, Message, ModalActionRowComponentBuilder, ModalBuilder, PermissionResolvable, StringSelectMenuBuilder, StringSelectMenuComponent, StringSelectMenuInteraction, TextInputBuilder, TextInputStyle, time } from 'discord.js';
 import ExtendedInteraction from '../typing/ExtendedInteraction';
 import { Event } from '../typing/Event';
 import Bot from '../structures/Bot';
 import { ArReplyType, Autoresponder, GButton, GSelectMenuOption, selectmenuModel } from '../models/gema-models';
+import { variables as getVariables, functions as utilFunctions } from '../util/Variables';
+import { createEmbedPagination } from '../util/Pagination';
 import { readdirSync } from 'fs';
+import { isNsfwChannel } from '../util/isNsfwChannel';
 
 export default new Event({
   name: "interactionCreate",
@@ -14,6 +17,106 @@ export default new Event({
     const { emotes, timeouts } = client
     if (!interaction.channel) return
     client.functions.setInput(interaction)
+
+    const buildSelectMenuInfoEmbed = (selectmenu: any, mode: 'general' | 'option', option?: any) => {
+      const baseEmbed = new EmbedBuilder()
+        .setColor(client.color)
+        .setAuthor({ name: interaction.guild?.name || '', iconURL: interaction.guild?.iconURL() || undefined })
+
+      if (mode === 'option' && option) {
+        return baseEmbed
+          .setTitle(`Opción de ${selectmenu.name}`)
+          .setDescription(`**Etiqueta:** ${option.label}\n**Valor:** ${option.value}\n**Descripción:** ${option.description || 'Sin descripción'}\n**Emoji:** ${option.emoji || 'Sin emoji'}`)
+      }
+
+      return baseEmbed
+        .setTitle(`Información de ${selectmenu.name}`)
+        .setDescription(`**ID:** ${selectmenu.customId}\n**Nombre:** ${selectmenu.name}\n**Opciones:** ${selectmenu.data?.options?.length || 0}\n**Mínimo:** ${selectmenu.data?.minValues || 1}\n**Máximo:** ${selectmenu.data?.maxValues || 1}\n**Placeholder:** ${selectmenu.data?.placeholder || 'Ninguno'}\n**Ephemeral:** ${selectmenu.ephemeral ? 'Sí' : 'No'}`)
+    }
+
+    const buildVariableCategoryEmbeds = (category: 'user' | 'server' | 'functions') => {
+      const varsObj = getVariables(interaction as any)
+      const categoryMap = {
+        user: { title: varsObj.user.title || 'Información del usuario', items: varsObj.user.vars || [] },
+        server: { title: varsObj.server.title || 'Información del servidor', items: varsObj.server.vars || [] },
+        functions: { title: 'Funciones', items: utilFunctions || [] }
+      }
+      const selected = categoryMap[category]
+      const items = (selected.items as any[]).map(item => `${emotes.dot} ${item.name}`)
+
+      if (!items.length) {
+        return [new EmbedBuilder()
+          .setTitle(`${emotes.star} ${selected.title}`)
+          .setColor(client.color)
+          .setDescription('No hay elementos para mostrar en esta categoría.')]
+      }
+
+      const linesPerPage = 12
+      const pages: EmbedBuilder[] = []
+      for (let i = 0; i < items.length; i += linesPerPage) {
+        const slice = items.slice(i, i + linesPerPage)
+        const halfway = Math.ceil(slice.length / 2)
+        const left = slice.slice(0, halfway).join('\n')
+        const right = slice.slice(halfway).join('\n')
+
+        const embed = new EmbedBuilder()
+          .setTitle(`${emotes.star} ${selected.title}`)
+          .setColor(client.color)
+          .setDescription('Usa `vars <nombre>` para ver información detallada de una variable o función.')
+          .addFields({ name: selected.title, value: left, inline: true })
+
+        if (right) {
+          embed.addFields({ name: '\u200b', value: right, inline: true })
+        }
+
+        pages.push(embed)
+      }
+
+      return pages
+    }
+
+    const updateSelectMenuPreview = async (content: string, selectmenuData: any) => {
+      const previewSelectMenu = new StringSelectMenuBuilder()
+        .setCustomId(selectmenuData.customId)
+
+      if (selectmenuData.data?.minValues) previewSelectMenu.setMinValues(selectmenuData.data.minValues)
+      if (selectmenuData.data?.maxValues) previewSelectMenu.setMaxValues(selectmenuData.data.maxValues)
+      if (selectmenuData.data?.placeholder) previewSelectMenu.setPlaceholder(selectmenuData.data.placeholder)
+
+      if (selectmenuData.data?.options?.length) {
+        previewSelectMenu.setOptions((selectmenuData.data.options ?? []).map((option: any) => ({
+          label: option.label,
+          value: option.value,
+          description: option.description,
+          emoji: option.emoji as ComponentEmojiResolvable | undefined
+        })))
+      } else {
+        previewSelectMenu.addOptions([{ label: 'Opción de ejemplo', value: 'opcion1', description: 'Descripción de ejemplo' }])
+      }
+
+      const components = [
+        new ActionRowBuilder<StringSelectMenuBuilder>().setComponents([previewSelectMenu]),
+        new ActionRowBuilder<ButtonBuilder>().setComponents([
+          (client.buttons.get('btnEditSelmData') as GButton).getButton(),
+          (client.buttons.get('btnEditSelmOptions') as GButton).getButton()
+        ])
+      ]
+
+      const anyInteraction = interaction as any
+
+      if (anyInteraction.message) {
+        await anyInteraction.deferUpdate()
+        await anyInteraction.message.edit({ content, components })
+        return
+      }
+
+      if (anyInteraction.replied || anyInteraction.deferred) {
+        await anyInteraction.editReply({ content, components })
+        return
+      }
+
+      await anyInteraction.reply({ content, components, ephemeral: true })
+    }
 
     if (interaction.isChatInputCommand()) {
       const { member, guild, commandName } = interaction
@@ -34,6 +137,18 @@ export default new Event({
         let permsFaltantes = botperms.filter(dmp => !guild?.members?.me?.permissions.has(dmp.flag as PermissionResolvable)).map(dmp => `\`${dmp.perm}\``).join(', ')
         return interaction.reply({
           content: `${emotes['error']} No tengo suficientes permisos para ejecutar este comando\nPermisos faltantes: ${permsFaltantes}`,
+          ephemeral: true
+        })
+      }
+
+      if (command.nsfw && !isNsfwChannel(interaction.channel)) {
+        return interaction.reply({
+          embeds: [
+            new EmbedBuilder()
+              .setColor(client.color)
+              .setTitle(`${emotes.sweat} Comando NSFW`)
+              .setDescription('Para ejecutar este comando, el canal debe permitir contenido NSFW')
+          ],
           ephemeral: true
         })
       }
@@ -78,8 +193,22 @@ export default new Event({
     } else if (interaction.isButton()) {
 
       await client.syncButtons()
+
+      if (interaction.customId.startsWith('showInfo|')) {
+        const [, selectMenuCustomId] = interaction.customId.split('|')
+        const selectmenu = client.selectmenus.find(s => s.guildId === interaction.guildId && s.customId === selectMenuCustomId)
+
+        if (selectmenu) {
+          await interaction.deferUpdate()
+          await interaction.message.edit({
+            embeds: [buildSelectMenuInfoEmbed(selectmenu, 'general')],
+            components: interaction.message.components
+          })
+        }
+        return
+      }
+
       let button = client.buttons.get(interaction.customId)
-      const { executeReply } = client.functions
 
       if (button) {
         if (button.run) {
@@ -96,10 +225,10 @@ export default new Event({
         } else if (button.reply) {
           if (button.ephemeral) {
             await interaction.deferReply({ ephemeral: true })
-            await executeReply(button.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
+            await client.functions.executeReply(button.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
           } else {
             await interaction.deferReply()
-            await executeReply(button.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
+            await client.functions.executeReply(button.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
           }
         } else {
           await interaction.deferUpdate()
@@ -109,11 +238,47 @@ export default new Event({
     } else if (interaction.isStringSelectMenu()) {
 
       client.selectmenus = await selectmenuModel.find({}).exec()
-      let selectmenu = client.selectmenus.find(s => s.customId === interaction.customId)
-      const { executeReply } = client.functions
+      const selectMenuTargetId = interaction.customId.startsWith('editing_')
+        ? interaction.customId.replace(/^editing_/, '')
+        : interaction.customId.startsWith('info_')
+          ? interaction.customId.replace(/^info_/, '')
+          : interaction.customId
+      let selectmenu = client.selectmenus.find(s => s.guildId === interaction.guildId && s.customId === selectMenuTargetId)
+
+      if (interaction.customId === 'variables_menu') {
+        const selectedCategory = interaction.values[0]
+        const category = selectedCategory === 'vars_user' ? 'user' : selectedCategory === 'vars_server' ? 'server' : 'functions'
+        const embeds = buildVariableCategoryEmbeds(category as 'user' | 'server' | 'functions')
+
+        const firstRow = interaction.message.components[0] as any
+          ; (firstRow.components[0] as StringSelectMenuComponent).options?.forEach(o => {
+            o.default = o.value === selectedCategory
+          })
+
+        if (embeds.length > 1) {
+          await interaction.deferUpdate()
+          return createEmbedPagination(interaction as StringSelectMenuInteraction, embeds)
+        }
+
+        await interaction.update({ embeds: [embeds[0]], components: interaction.message.components })
+        return
+      }
+
+      if (interaction.customId.startsWith('info_')) {
+        const selectedOption = selectmenu?.data?.options?.find(o => o.value === interaction.values[0])
+
+        if (selectmenu) {
+          await interaction.deferUpdate()
+          await interaction.message.edit({
+            embeds: [buildSelectMenuInfoEmbed(selectmenu, 'option', selectedOption)],
+            components: interaction.message.components
+          })
+        }
+        return
+      }
 
       if (selectmenu) {
-        if (selectmenu.customId.startsWith('editing_')) {
+        if (interaction.customId.startsWith('editing_')) {
 
           const option = interaction.component.options.find(o => o.value === interaction.values[0])
           const goption = selectmenu.data.options?.find(o => o.value === option?.value)
@@ -155,7 +320,7 @@ export default new Event({
             if (goption.reply) txtReply.setValue(goption.reply.rawreply)
 
             const modalEditOption = new ModalBuilder()
-              .setCustomId(`mdlEditSelmOption_${selectmenu.customId}_${option?.value}`)
+              .setCustomId(`mdlEditSelmOption_${selectmenu.customId}::${encodeURIComponent(option.value)}`)
               .setTitle(`Datos de opción ${option?.label}`)
               .setComponents([
                 new ActionRowBuilder<ModalActionRowComponentBuilder>()
@@ -171,24 +336,32 @@ export default new Event({
             interaction.showModal(modalEditOption)
           }
         } else {
+          const selectedValues = interaction.values ?? []
+          const options = selectmenu?.data?.options ?? []
+
+          // Prioritize the general selectmenu reply over option-specific replies
           if (selectmenu.reply) {
             if (selectmenu.ephemeral) {
               await interaction.deferReply({ ephemeral: true })
-              await executeReply(selectmenu.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
+              await client.functions.executeReply(selectmenu.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
             } else {
               await interaction.deferReply()
-              await executeReply(selectmenu.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
+              await client.functions.executeReply(selectmenu.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
             }
-          } else if (selectmenu.data.options?.some(o => o.reply)) {
-            for (let sel in interaction.values) {
-              let opc = selectmenu.data.options?.find(o => o.value == sel)
+          } else {
+            const optionReplies = selectedValues
+              .map((value) => options.find((option) => option.value === value && option.reply))
+              .filter((option): option is NonNullable<typeof option> => Boolean(option))
 
-              if (opc && opc.reply) {
-                await interaction.deferReply()
-                await executeReply(opc.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
-              } else {
-                await interaction.deferUpdate()
+            if (optionReplies.length > 0) {
+              for (const option of optionReplies) {
+                if (option.reply) {
+                  await interaction.deferReply()
+                  await client.functions.executeReply(option.reply, interaction).catch(async (e: Error) => await interaction.channel.send(`${client.emotes.error} ${e}`))
+                }
               }
+            } else {
+              await interaction.deferUpdate()
             }
           }
         }
@@ -209,22 +382,23 @@ export default new Event({
           })
           .setFooter({ text: `@alyduhh`, iconURL: client.users.cache.get(client.ownerIDS[0])?.displayAvatarURL() });
 
-        (interaction.message.components[0].components[0] as StringSelectMenuComponent).options?.forEach(o => {
-          if (o.value === interaction.values[0]) o.default = true
-          else o.default = false
-        })
+        const firstRow = interaction.message.components[0] as any
+          ; (firstRow.components[0] as StringSelectMenuComponent).options?.forEach(o => {
+            if (o.value === interaction.values[0]) o.default = true
+            else o.default = false
+          })
         await interaction.editReply({ embeds: [embed], components: interaction.message.components })
       }
     } else if (interaction.isModalSubmit()) {
 
-      const { createAutoresponder } = client.functions
       if (interaction.customId.startsWith("mdlEditSelmData_") || interaction.customId.startsWith("mdlEditSelmOption_")) {
 
         client.selectmenus = await selectmenuModel.find({}).exec()
-        let ids = interaction.customId.split('_')
-        let custom_id = ids[1].trim()
-        let selmData = { customId: `arselm#${custom_id}`, guildId: interaction.guildId }
-        const selectmenu = client.selectmenus.filter(s => s.guildId === interaction.guildId).find(s => s.customId === `arselm#${custom_id}`)
+        const modalCustomId = interaction.customId.replace(/^mdlEditSelmData_/, '').replace(/^mdlEditSelmOption_/, '')
+        const [customIdValue, rawOptionValue] = modalCustomId.includes('::') ? modalCustomId.split('::') : [modalCustomId, undefined]
+        const resolvedCustomId = customIdValue.startsWith('arselm#') ? customIdValue : `arselm#${customIdValue}`
+        let selmData = { customId: resolvedCustomId, guildId: interaction.guildId }
+        const selectmenu = client.selectmenus.filter(s => s.guildId === interaction.guildId).find(s => s.customId === resolvedCustomId)
 
         if (interaction.customId.startsWith("mdlEditSelmData_")) {
 
@@ -238,79 +412,88 @@ export default new Event({
             interface SelectMenuData {
               data?: {
                 placeholder?: string
-                minvalues?: number
-                maxvalues?: number
+                minValues?: number
+                maxValues?: number
               }
               reply?: ArReplyType
               ephemeral?: boolean
             }
 
-            const dataToEdit: SelectMenuData = {}
-            if (placeholder || minvalues || maxvalues || reply) {
-              dataToEdit.data = {}
+            const dataToEdit: Record<string, any> = { $set: {}, $unset: {} }
+            const nextData = { ...(selectmenu?.data ?? {}) } as Record<string, any>
 
-              if (placeholder) {
-                dataToEdit.data.placeholder = placeholder
+            if (typeof placeholder === 'string') {
+              if (placeholder.trim()) {
+                nextData.placeholder = placeholder.trim()
+              } else {
+                delete nextData.placeholder
               }
-              if (ephemeral && !(ephemeral === 'true' || ephemeral === 'false')) return await interaction.message?.edit(`${emotes.error} El campo para especificar si la respuesta será privada sólo acepta valores \`true\` o \`false\``)
-              if (ephemeral === 'true') dataToEdit.ephemeral = true
-              if (minvalues || maxvalues) {
-                if (minvalues > maxvalues) return await interaction.message?.edit(`${emotes.error} El número mínimo de opciones seleccionables debe ser menor al número máximo`)
-                if (minvalues && isNaN(Number(minvalues))) return await interaction.message?.edit(`${emotes.error} El número mínimo de opciones seleccionables no es un número válido`)
-                if (maxvalues && isNaN(Number(maxvalues))) return await interaction.message?.edit(`${emotes.error} El número máximo de opciones seleccionables no es un número válido`)
+            }
 
-                if (minvalues && !isNaN(Number(minvalues))) {
-                  dataToEdit.data.minvalues = Number(minvalues)
-                }
-                if (maxvalues && !isNaN(Number(maxvalues))) {
-                  dataToEdit.data.maxvalues = Number(maxvalues)
-                }
+            if (typeof ephemeral === 'string') {
+              if (ephemeral === 'true') {
+                dataToEdit.$set.ephemeral = true
+              } else if (ephemeral === 'false') {
+                dataToEdit.$set.ephemeral = false
+              } else {
+                return await interaction.message?.edit(`${emotes.error} El campo para especificar si la respuesta será privada sólo acepta valores \`true\` o \`false\``)
               }
-              if (reply) {
+            }
+
+            if (typeof minvalues === 'string' || typeof maxvalues === 'string') {
+              const parsedMin = minvalues?.trim() ? Number(minvalues) : undefined
+              const parsedMax = maxvalues?.trim() ? Number(maxvalues) : undefined
+
+              if (minvalues && maxvalues && parsedMin !== undefined && parsedMax !== undefined && parsedMin > parsedMax) {
+                return await interaction.message?.edit(`${emotes.error} El número mínimo de opciones seleccionables debe ser menor al número máximo`)
+              }
+              if (minvalues && minvalues.trim() && isNaN(Number(minvalues))) {
+                return await interaction.message?.edit(`${emotes.error} El número mínimo de opciones seleccionables no es un número válido`)
+              }
+              if (maxvalues && maxvalues.trim() && isNaN(Number(maxvalues))) {
+                return await interaction.message?.edit(`${emotes.error} El número máximo de opciones seleccionables no es un número válido`)
+              }
+
+              if (minvalues?.trim()) {
+                nextData.minValues = Number(minvalues)
+              } else if (typeof minvalues === 'string') {
+                delete nextData.minValues
+              }
+
+              if (maxvalues?.trim()) {
+                nextData.maxValues = Number(maxvalues)
+              } else if (typeof maxvalues === 'string') {
+                delete nextData.maxValues
+              }
+            }
+
+            if (typeof reply === 'string') {
+              if (reply.trim()) {
                 let ar: Autoresponder | undefined = undefined
 
                 try {
-                  ar = await createAutoresponder(interaction as ExtendedInteraction, reply)
+                  ar = await client.functions.createAutoresponder(interaction as ExtendedInteraction, reply)
                 } catch (e) { return interaction.editReply(`${e}`) }
 
-                if (ar) dataToEdit.reply = ar.arReply
+                if (ar) dataToEdit.$set.reply = ar.arReply
+              } else {
+                dataToEdit.$unset.reply = ''
               }
-              console.log(dataToEdit)
-              await selectmenuModel.updateOne(selmData, dataToEdit)
             }
+
+            dataToEdit.$set.data = nextData
+            await selectmenuModel.updateOne(selmData, dataToEdit)
 
             const selectmenuf = await selectmenuModel.findOne(selmData)
 
             if (selectmenuf) {
-              let prevSelm = new StringSelectMenuBuilder()
-                .setCustomId(selectmenuf.customId)
-              if (selectmenuf.data.minValues) prevSelm.setMinValues(selectmenuf.data.minValues)
-              if (selectmenuf.data.maxValues) prevSelm.setMaxValues(selectmenuf.data.maxValues)
-              if (selectmenuf.data.placeholder) prevSelm.setPlaceholder(selectmenuf.data.placeholder)
-              if (selectmenuf.data.options?.length) {
-                prevSelm.setOptions(selectmenuf.data.options)
-              } else {
-                prevSelm.addOptions([{ label: "Opción de ejemplo", value: "opcion1", description: "Descripción de ejemplo" }])
-              }
-
-              await interaction.deferUpdate()
-              await interaction.message?.edit({
-                content: `${emotes.check} Datos de menú de selección actualizados`,
-                components: [
-                  new ActionRowBuilder<StringSelectMenuBuilder>()
-                    .setComponents([prevSelm]),
-                  new ActionRowBuilder<ButtonBuilder>()
-                    .setComponents([
-                      (client.buttons.get('btnEditSelmData') as GButton).getButton(),
-                      (client.buttons.get('btnEditSelmOptions') as GButton).getButton()
-                    ])
-                ]
-              })
+              await updateSelectMenuPreview(`${emotes.check} Datos de menú de selección actualizados`, selectmenuf)
             }
           }
         } else {
           if (selectmenu && selectmenu.data.options && selectmenu.data.options.length) {
-            let opt = selectmenu.data.options?.find(o => o.value === `${ids[3]}_${ids[4]}`)
+            const encodedOptionValue = rawOptionValue ? decodeURIComponent(rawOptionValue) : undefined
+            let opt = selectmenu.data.options?.find(o => o.value === encodedOptionValue)
 
             if (opt) {
               let option: GSelectMenuOption = { index: opt.index, label: opt.label, value: opt.value }
@@ -327,57 +510,51 @@ export default new Event({
                     components: []
                   })
 
-                if (emoji) option.emoji = emoji
+                if (typeof emoji === 'string') {
+                  if (emoji.trim()) option.emoji = emoji.trim()
+                  else delete option.emoji
+                }
                 option.index = opt.index || 1
-                if (label) {
-                  option.label = label
-                  option.value = `${label}_${opt.index || 1}`
+                if (typeof label === 'string') {
+                  if (label.trim()) {
+                    option.label = label.trim()
+                    option.value = `${label.trim()}_${opt.index || 1}`
+                  } else {
+                    option.label = opt.label
+                    option.value = opt.value
+                  }
                 }
-                if (desc) option.description = desc
-                if (reply) {
-                  let ar: Autoresponder | undefined = undefined
+                if (typeof desc === 'string') {
+                  if (desc.trim()) option.description = desc.trim()
+                  else delete option.description
+                }
+                if (typeof reply === 'string') {
+                  if (reply.trim()) {
+                    let ar: Autoresponder | undefined = undefined
 
-                  try {
-                    ar = await createAutoresponder(interaction as ExtendedInteraction, reply)
-                  } catch (e) { return interaction.reply(`${e}`) }
+                    try {
+                      ar = await client.functions.createAutoresponder(interaction as ExtendedInteraction, reply)
+                    } catch (e) { return interaction.reply(`${e}`) }
 
-                  if (ar) option.reply = ar.arReply
+                    if (ar) option.reply = ar.arReply
+                  } else {
+                    delete option.reply
+                  }
                 }
 
-                const optionIndex = selectmenu.data.options.findIndex(opt => opt.value === option.value);
+                const optionIndex = selectmenu.data.options.findIndex(item => item.index === (opt?.index ?? 0) || item.value === (opt?.value ?? ''))
 
                 if (optionIndex !== -1) {
-                  selectmenu.data.options[optionIndex] = option;
+                  selectmenu.data.options[optionIndex] = option
+                } else {
+                  selectmenu.data.options.push(option)
                 }
-                await selectmenuModel.updateOne(selmData, { "data.options": selectmenu.data.options })
+                await selectmenuModel.updateOne(selmData, { $set: { 'data.options': selectmenu.data.options } })
 
                 const selectmenuf = await selectmenuModel.findOne(selmData)
 
                 if (selectmenuf) {
-                  let prevSelm = new StringSelectMenuBuilder()
-                    .setCustomId(selectmenuf.customId)
-                  if (selectmenuf.data.minValues) prevSelm.setMinValues(selectmenuf.data.minValues)
-                  if (selectmenuf.data.maxValues) prevSelm.setMaxValues(selectmenuf.data.maxValues)
-                  if (selectmenuf.data.placeholder) prevSelm.setPlaceholder(selectmenuf.data.placeholder)
-                  if (selectmenuf.data.options?.length) {
-                    prevSelm.setOptions(selectmenuf.data.options)
-                  } else {
-                    prevSelm.addOptions([{ label: "Opción de ejemplo", value: "opcion1", description: "Descripción de ejemplo" }])
-                  }
-
-                  await interaction.deferUpdate()
-                  await interaction.message?.edit({
-                    content: `${emotes.check} Datos de menú de selección actualizados`,
-                    components: [
-                      new ActionRowBuilder<StringSelectMenuBuilder>()
-                        .setComponents([prevSelm]),
-                      new ActionRowBuilder<ButtonBuilder>()
-                        .setComponents([
-                          (client.buttons.get('btnEditSelmData') as GButton).getButton(),
-                          (client.buttons.get('btnEditSelmOptions') as GButton).getButton()
-                        ])
-                    ]
-                  })
+                  await updateSelectMenuPreview(`${emotes.check} Opción actualizada`, selectmenuf)
                 }
               }
             } else console.log('interactionCreate.ts > mdlEditSelmOption > opt has no data')

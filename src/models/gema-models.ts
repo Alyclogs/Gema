@@ -1,6 +1,6 @@
 import mongoose, { mongo } from 'mongoose';
 import { bot } from '..'
-import { ButtonBuilder, ColorResolvable, ComponentType, Message, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuComponentData } from 'discord.js'
+import { ButtonBuilder, ButtonStyle, ColorResolvable, ComponentType, Message, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuComponentData } from 'discord.js'
 import { ComponentRunOptions } from '../typing/Command'
 
 class Autoresponder {
@@ -77,9 +77,16 @@ class GButton {
     }
 
     getButton(): ButtonBuilder {
+        const storedStyle = Number(this.data.style)
+        const style = [
+            ButtonStyle.Primary,
+            ButtonStyle.Secondary,
+            ButtonStyle.Success,
+            ButtonStyle.Danger
+        ].includes(storedStyle) ? storedStyle : ButtonStyle.Primary
         let discordBtn = new ButtonBuilder()
             .setCustomId(this.customId)
-            .setStyle(this.data.style)
+            .setStyle(style)
             .setLabel(this.data.label)
         if (this.data.emoji) discordBtn.setEmoji(this.data.emoji)
         return discordBtn;

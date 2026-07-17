@@ -1,9 +1,11 @@
 import { Pagination } from 'pagination.djs';
 import { color } from '../config.json';
-import { ChatInputCommandInteraction, ColorResolvable, EmbedBuilder, Message } from 'discord.js';
+import { ColorResolvable, EmbedBuilder, Interaction, InteractionType, Message } from 'discord.js';
 import emojis from '../util/emojis.json';
 
-export function createEmbedPagination(interaction: ChatInputCommandInteraction<"cached"> | Message, embeds: EmbedBuilder[]) {
+export function createEmbedPagination(interaction: Exclude<Interaction, {
+    type: InteractionType.ApplicationCommandAutocomplete;
+}> | Message, embeds: EmbedBuilder[]) {
     const pagination = new Pagination(interaction);
     pagination.setEmbeds(embeds, (embed, index, array) => {
         return embed.setFooter({ text: `Página: ${index + 1} de ${array.length}` })

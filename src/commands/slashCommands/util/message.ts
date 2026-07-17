@@ -134,12 +134,10 @@ export default new SlashCommand({
         }
         if (group === 'attach' || subcommand === 'edit-content' || subcommand === 'show') {
             if (!messagef) return await interaction.editReply(`${emojis.hmph} No existe un mensaje con ese nombre. Créalo con /message create`)
-            const { createAutoresponder, executeReply } = client.functions
-
             if (subcommand === 'show') {
                 if (messagef.reply) {
                     await interaction.editReply(`Enviando mensaje...`)
-                    await executeReply(messagef.reply, interaction as ExtendedInteraction)
+                    await client.functions.executeReply(messagef.reply, interaction as ExtendedInteraction)
                 } else {
                     return await interaction.editReply(`${emojis.error} El mensaje aún no tiene contenido, asígnale uno con /message edit-content`)
                 }
@@ -160,13 +158,13 @@ export default new SlashCommand({
                         }
                     }
                 }
-                const ar = await createAutoresponder(interaction as ExtendedInteraction, content)
+                const ar = await client.functions.createAutoresponder(interaction as ExtendedInteraction, content)
 
                 if (ar) {
                     messagef.reply = ar.arReply
                     await messageModel.updateOne(messageData, { reply: messagef.reply })
                     await interaction.editReply({ content: `${emojis.check} Contenido editado, enviando previsualización...` })
-                    await executeReply(messagef.reply, interaction as ExtendedInteraction)
+                    await client.functions.executeReply(messagef.reply, interaction as ExtendedInteraction)
                 }
             }
             if (subcommand === 'button') {
@@ -176,7 +174,7 @@ export default new SlashCommand({
                 if (messagef.reply?.buttons?.length && messagef.reply.buttons.find(b => b === button)) return await interaction.editReply(`${emojis.angry} El mensaje ya tiene adjunto ese botón`)
 
                 if (!messagef.reply) {
-                    const ar = await createAutoresponder(interaction as ExtendedInteraction, ` {button:${button}}`)
+                    const ar = await client.functions.createAutoresponder(interaction as ExtendedInteraction, ` {button:${button}}`)
                     if (ar) messagef.reply = ar.arReply
 
                 } else messagef.reply.rawreply = messagef.reply.rawreply + ` {button:${button}}`
@@ -184,7 +182,7 @@ export default new SlashCommand({
                 if (messagef.reply) {
                     await messageModel.updateOne(messageData, { reply: messagef.reply })
                     await interaction.editReply({ content: `${emojis.check} Botón añadido, enviando previsualización...` })
-                    await executeReply(messagef.reply, interaction as ExtendedInteraction)
+                    await client.functions.executeReply(messagef.reply, interaction as ExtendedInteraction)
 
                 } else throw new Error('No se ha podido adjuntar el botón')
             }
@@ -195,7 +193,7 @@ export default new SlashCommand({
                 if (messagef.reply?.selectmenus?.length && messagef.reply.selectmenus.find(b => b === selectmenu)) return await interaction.editReply(`${emojis.angry} El mensaje ya tiene adjunto ese menú de selección`)
 
                 if (!messagef.reply) {
-                    const ar = await createAutoresponder(interaction as ExtendedInteraction, `{selectmenu:${selectmenu}}`)
+                    const ar = await client.functions.createAutoresponder(interaction as ExtendedInteraction, `{selectmenu:${selectmenu}}`)
                     if (ar) messagef.reply = ar.arReply
 
                 } else messagef.reply.rawreply = messagef.reply.rawreply + `{selectmenu:${selectmenu}}`
@@ -203,7 +201,7 @@ export default new SlashCommand({
                 if (messagef.reply) {
                     await messageModel.updateOne(messageData, { reply: messagef.reply })
                     await interaction.editReply({ content: `${emojis.check} Menú de selección añadido, enviando previsualización...` })
-                    await executeReply(messagef.reply, interaction as ExtendedInteraction)
+                    await client.functions.executeReply(messagef.reply, interaction as ExtendedInteraction)
 
                 } else throw new Error('No se ha podido adjuntar el menú de selección')
             }

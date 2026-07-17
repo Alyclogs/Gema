@@ -1,8 +1,8 @@
-import { ApplicationCommandDataResolvable, AutocompleteInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, Message, MessageComponentInteraction, PermissionResolvable, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, StringSelectMenuInteraction } from "discord.js";
+import { ApplicationCommandDataResolvable, AutocompleteInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, Message, MessageComponentInteraction, PermissionResolvable, SlashCommandBuilder, SlashCommandOptionsOnlyBuilder, SlashCommandSubcommandsOnlyBuilder, StringSelectMenuInteraction } from "discord.js";
 import Bot from "../structures/Bot";
 import emojis from "../util/emojis.json"
 
-interface SlashCommandRunOptions {
+export interface SlashCommandRunOptions {
   client: Bot;
   interaction: ChatInputCommandInteraction;
   args: Omit<CommandInteractionOptionResolver, 'getMessage' | 'getFocused'>;
@@ -44,8 +44,10 @@ type CommandRunFunction = (options: CommandRunOptions) => any;
 type SlashCommandAutocompleteFunction = (options: SlashCommandAutocompleteOptions) => any;
 
 export type SlashCommandType = {
-  data: Omit<SlashCommandBuilder, "addSubcommandGroup" | "addSubcommand"> | SlashCommandSubcommandsOnlyBuilder
+  data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder | SlashCommandOptionsOnlyBuilder
   aliases?: string[]
+  owner?: boolean
+  nsfw?: boolean
   botperms: CommandPerms[]
   memberperms: CommandPerms[]
   timeout?: number
@@ -55,6 +57,7 @@ export type SlashCommandType = {
 
 export type CommandType = {
   owner?: boolean;
+  nsfw?: boolean;
   name: string,
   description: string,
   aliases?: string[]

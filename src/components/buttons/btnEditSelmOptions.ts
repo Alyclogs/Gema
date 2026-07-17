@@ -7,7 +7,8 @@ btnEditSelmOptions.data.label = 'Editar opciones'
 btnEditSelmOptions.data.emoji = '<:edit:1151582653867376761>'
 btnEditSelmOptions.data.style = 2
 btnEditSelmOptions.run = async ({ interaction, emojis }) => {
-    const selectmenu = interaction.message.components[0].components[0] as StringSelectMenuComponent
+    const firstRow = interaction.message.components[0] as any
+    const selectmenu = firstRow.components[0] as StringSelectMenuComponent
 
     if (selectmenu.data.options.length == 1 && selectmenu.data.options[0].label === "Opción de ejemplo") {
         return await interaction.reply(`${emojis.confused} Este menú de selección no tiene opciones. Añade algunas con </selectmenu add-option:1137889596160614465>`)
@@ -17,7 +18,12 @@ btnEditSelmOptions.run = async ({ interaction, emojis }) => {
         .setMinValues(selectmenu.data.min_values || 1)
         .setMaxValues(selectmenu.data.max_values || 1)
         .setPlaceholder(selectmenu.data.placeholder || "Seleccione una opción")
-        .setOptions(selectmenu.data.options)
+        .setOptions((selectmenu.data.options ?? []).map(option => ({
+            label: option.label,
+            value: option.value,
+            description: option.description,
+            emoji: option.emoji
+        })))
 
     await interaction.deferUpdate()
     await interaction.editReply({

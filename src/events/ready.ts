@@ -8,12 +8,17 @@ export default new Event(
     console.log(`${client.user?.username} is online!`);
     client.user?.setActivity(`/help | @${client.user.username}`)
 
-    connect(process.env.mongourl).then(async () => {
+    try {
       set('strictQuery', false)
+      await connect(process.env.mongourl || '', {
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 20000
+      })
       console.log(`☁ Conectado a la base de datos de MongoDB`)
-    }).catch((err) => {
+    } catch (err) {
       console.log(`☁ Error al conectarse a la base de datos`);
       console.log(err)
-    })
+    }
   }
 );

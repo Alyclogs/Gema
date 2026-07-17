@@ -13,6 +13,8 @@ export default new Command({
         await message.delete()
         let saymessage = message.content.slice(prefix.length).trim().split(' ').slice(1).join(' ')
         if (!saymessage) return message.reply({ content: `${emojis.hmph} No tengo nada que decir` })
-        await message.channel.send(saymessage)
+        if ('send' in message.channel && typeof message.channel.send === 'function') {
+            await message.channel.send(saymessage)
+        }
     }
 })

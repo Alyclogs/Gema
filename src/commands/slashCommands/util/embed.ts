@@ -1,6 +1,5 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Client, EmbedBuilder, ColorResolvable, TextChannel } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, ColorResolvable } from 'discord.js';
 import { embedModel, EmbedDataType } from '../../../models/gema-models';
-import { variables } from '../../../util/Variables';
 import { createEmbedPagination } from '../../../util/Pagination';
 import { Permissions } from '../../../util/Permissions';
 import { SlashCommand } from '../../../structures/Command';
@@ -178,9 +177,20 @@ export default new SlashCommand({
             } else {
                 embedData = embedFound.data
                 let previewEmbed = embedData ? client.functions.replaceEmbedFields(embedData) : new EmbedBuilder().setColor(client.color)
+                const hasVisibleEmbedContent = !!(
+                    previewEmbed.data.title ||
+                    previewEmbed.data.description ||
+                    previewEmbed.data.author?.name ||
+                    previewEmbed.data.footer?.text ||
+                    previewEmbed.data.image ||
+                    previewEmbed.data.thumbnail
+                )
 
                 if (subcommad === 'show') {
-                    await (interaction.channel as TextChannel).send({
+                    if (!hasVisibleEmbedContent) {
+                        previewEmbed.setDescription('`Este embed no tiene contenido todavía`')
+                    }
+                    return interaction.editReply({
                         embeds: [previewEmbed],
                         allowedMentions: { repliedUser: false }
                     })
@@ -192,10 +202,8 @@ export default new SlashCommand({
 
                         const prevauthor = author ? client.functions.replaceVars(author) : undefined
                         const previcon = icon ? client.functions.replaceVars(icon) : undefined
-                        console.log(prevauthor, previcon);
-
                         if (icon && previcon) {
-                            if (!icon.startsWith('https://') && !previcon.startsWith('https://')) {
+                            if (!/^https?:\/\//i.test(previcon)) {
                                 return interaction.editReply(`${emojis.hmph} El ícono no es un link válido, utiliza {user_avatar} o {server_icon} en su lugar`)
                             }
                         }
@@ -206,10 +214,7 @@ export default new SlashCommand({
 
                         const finalIconURL = iconURL && (iconURL.startsWith('https://') || iconURL.startsWith('http://')) ? iconURL : undefined
 
-                        previewEmbed.setAuthor({
-                            name: authorName,
-                            iconURL: finalIconURL
-                        })
+                        previewEmbed.setAuthor(authorName ? { name: authorName, iconURL: finalIconURL } : null)
                         await embedModel.updateOne(data, { 'data.author': { name: author || '', icon_url: icon || '' } })
                         return await interaction.editReply({
                             content: (`${emojis.check}` + (author ? ` Autor actualizado` : ` Autor removido`)),
@@ -248,7 +253,7 @@ export default new SlashCommand({
                         const prevColor = color ? client.functions.replaceVars(color) : client.color
 
                         if (color && prevColor) {
-                            if (!/^#([0-9a-f]{6})/i.test(color) && !/^#([0-9a-f]{6})/i.test(prevColor as string)) {
+                            if (!/^#[0-9a-f]{6}$/i.test(prevColor as string)) {
                                 return interaction.editReply(`${emojis.hmph} El color no es un código HEX válido. Prueba a utilizar {user_displaycolor} u otro color válido`)
                             }
                         }
@@ -264,10 +269,8 @@ export default new SlashCommand({
                     if (subcommad === 'thumbnail') {
                         const link = interaction.options.getString('link')
                         const prevThumb = link ? client.functions.replaceVars(link) : null
-                        console.log(link)
-
                         if (link && prevThumb) {
-                            if (!prevThumb.startsWith('https://') && !link.startsWith('https://')) {
+                            if (!/^https?:\/\//i.test(prevThumb)) {
                                 return interaction.editReply(`${emojis.hmph} El link para la miniatura no es un enlace válido, utiliza </variables:1059322453668663367> para ver la lista de variables disponibles`)
                             }
                         }
@@ -285,7 +288,7 @@ export default new SlashCommand({
                         const prevImg = link ? client.functions.replaceVars(link) : null
 
                         if (link && prevImg) {
-                            if (!prevImg.startsWith('https://') && !link.startsWith('https://')) {
+                            if (!/^https?:\/\//i.test(prevImg)) {
                                 return interaction.editReply(`${emojis.hmph} El link para la imagen no es un enlace válido, utiliza </variables:1059322453668663367> para ver la lista de variables disponibles`)
                             }
                         }
@@ -307,11 +310,12 @@ export default new SlashCommand({
                         let previcon = icon ? client.functions.replaceVars(icon) : undefined
 
                         if (icon && previcon) {
-                            if (!previcon.startsWith('https://') && !icon.startsWith('https://')) {
+                            if (!/^https?:\/\//i.test(previcon)) {
                                 return interaction.editReply(`${emojis.hmph} El ícono no es un link válido, utiliza {user_avatar} o {server_icon} en su lugar`)
                             }
                         }
-                        previewEmbed.setFooter({ text: prevtext || text || '', iconURL: previcon || icon || undefined })
+                        const footerText = prevtext || text
+                        previewEmbed.setFooter(footerText ? { text: footerText, iconURL: previcon || icon || undefined } : null)
                         await embedModel.updateOne(data, { 'data.footer': { text: text || '', icon_url: icon || '' } })
                         return await interaction.editReply({
                             content: (`${emojis.check}` + (text ? ` Texto de pie actualizado` : ` Texto de pie removido`)),
@@ -322,7 +326,7 @@ export default new SlashCommand({
                     if (subcommad === 'timestamp') {
                         const timestamp = interaction.options.getBoolean('timestamp')
 
-                        if (timestamp) try { previewEmbed.setTimestamp() } catch (e) { }
+                        previewEmbed.setTimestamp(timestamp ? new Date() : null)
 
                         await embedModel.updateOne(data, { 'data.timestamp': timestamp || false })
                         return await interaction.editReply({

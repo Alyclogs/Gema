@@ -1,4 +1,5 @@
 import { SlashCommand } from "../../../structures/Command"
+import { SlashCommandType } from "../../../typing/Command"
 import { readdirSync } from "fs"
 import { Client, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ChatInputCommandInteraction } from 'discord.js'
 import { Permissions } from '../../../util/Permissions'
@@ -8,7 +9,7 @@ export default new SlashCommand({
         .setName('help')
         .setDescription('Muestra información sobre mis comandos')
         .addStringOption(option =>
-            option.setName('comando').setDescription('Muestra información sobre un comando')),
+            option.setName('comando').setDescription('Muestra información sobre un comando')) as unknown as SlashCommandType["data"],
     timeout: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes],

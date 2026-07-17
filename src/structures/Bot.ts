@@ -1,5 +1,5 @@
 import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, ColorResolvable, GatewayIntentBits, ModalBuilder } from 'discord.js';
-import { join } from 'path';
+import { basename, extname, join } from 'path';
 import fs from 'fs';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
@@ -27,6 +27,9 @@ export default class Bot extends Client {
   public messages: GMessage[] = []
   public modals: ModalBuilder[] = []
   public functions: Functions
+  private messageCommandPaths = new Map<string, string>()
+  private slashCommandPaths = new Map<string, string>()
+  private eventPaths = new Map<string, string>()
 
   constructor() {
     super({
@@ -51,8 +54,8 @@ export default class Bot extends Client {
 
     this.importEvents();
     this.importCommands();
-    this.importSlashCommands();
     this.importComponents();
+    this.importSlashCommands();
   }
 
   private async importEvents() {
@@ -63,6 +66,17 @@ export default class Bot extends Client {
     for (const file of eventFiles) {
       const filePath = join(join(__dirname, '../events'), file);
       const event: Event<keyof ClientEvents> = (await import(filePath))?.default;
+
+      if (event?.data?.name) {
+        const eventName = event.data.name
+        this.eventPaths.set(eventName, filePath)
+        this.eventPaths.set(eventName.toLowerCase(), filePath)
+
+        const fileBase = basename(file, extname(file)).toLowerCase()
+        if (fileBase !== eventName.toLowerCase()) {
+          this.eventPaths.set(fileBase, filePath)
+        }
+      }
 
       if (event.data.once) {
         this.once(event.data.name, (...args) => {
@@ -98,6 +112,13 @@ export default class Bot extends Client {
         const command: CommandType = (await import(filePath)).default;
 
         this.commands.set(command.name, command);
+        this.messageCommandPaths.set(command.name, filePath);
+
+        if (command.aliases?.length) {
+          for (const alias of command.aliases) {
+            this.messageCommandPaths.set(alias, filePath);
+          }
+        }
       }
     }
     console.log(`[✅] Comandos cargados`);
@@ -106,6 +127,10 @@ export default class Bot extends Client {
   private async importSlashCommands(register?: boolean | undefined, guildID?: string | undefined) {
     const commandFolders = fs
       .readdirSync(join(__dirname, '../commands/slashCommands'))
+
+    this.commandsArray = [];
+    this.slashCommands.clear();
+    this.slashCommandPaths.clear();
 
     for (const commandFolder of commandFolders) {
       const commandFiles = fs
@@ -117,6 +142,7 @@ export default class Bot extends Client {
         const command: SlashCommandType = (await import(filePath)).default;
 
         this.slashCommands.set(command.data.name, command);
+        this.slashCommandPaths.set(command.data.name, filePath);
 
         const commandData = command.data.toJSON();
         this.commandsArray.push(commandData);
@@ -124,7 +150,7 @@ export default class Bot extends Client {
     }
 
     if (register) {
-      this.registerCommands({
+      await this.registerCommands({
         commands: this.commandsArray,
         guildId: guildID || undefined
       })
@@ -133,15 +159,17 @@ export default class Bot extends Client {
 
   private async registerCommands({ commands, guildId }: RegisterCommandsOptions) {
     const rest = new REST({ version: '9' }).setToken(process.env.token);
-    if (guildId) {
-      console.log(guildId)
+    const targetGuildId = guildId || undefined;
+
+    if (targetGuildId) {
+      console.log(`[📝] Registrando comandos slash en el servidor: ${targetGuildId}`)
       rest
         .put(
-          Routes.applicationGuildCommands(config.clientID, process.env.guildId),
+          Routes.applicationGuildCommands(config.clientID, targetGuildId),
           { body: commands }
         )
         .then(() =>
-          console.log(`[✅] Comandos slash cargados`)
+          console.log(`[✅] Comandos slash cargados para el servidor ${targetGuildId}`)
         )
         .catch(console.error);
     } else {
@@ -151,7 +179,7 @@ export default class Bot extends Client {
           { body: commands }
         )
         .then(() =>
-          console.log(`[✅] Comandos slash cargados`)
+          console.log(`[✅] Comandos slash globales cargados`)
         )
         .catch(console.error);
     }
@@ -185,10 +213,107 @@ export default class Bot extends Client {
 
   public async syncButtons() {
     this.buttons.sweep(() => true)
-    const buttons = await buttonModel.find({}).exec()
-    for (let button of buttons) {
-      this.buttons.set(button.customId, button)
+
+    try {
+      const buttons = await buttonModel.find({}).exec()
+      for (let button of buttons) {
+        const hydratedButton = Object.assign(new GButton(), button.toObject())
+        this.buttons.set(hydratedButton.customId, hydratedButton)
+      }
+    } catch (error) {
+      console.error('[⚠️] No se pudieron sincronizar los botones desde MongoDB:', error)
     }
+
     await this.importComponents()
+  }
+
+  public async reloadCommand(target: string, kind: 'message' | 'slash' | 'auto' = 'auto') {
+    const normalizedTarget = target.toLowerCase()
+
+    const candidatePaths: string[] = []
+
+    if (kind === 'message' || kind === 'auto') {
+      const messagePath = this.messageCommandPaths.get(normalizedTarget)
+      if (messagePath) candidatePaths.push(messagePath)
+    }
+
+    if (kind === 'slash' || kind === 'auto') {
+      const slashPath = this.slashCommandPaths.get(normalizedTarget)
+      if (slashPath) candidatePaths.push(slashPath)
+    }
+
+    if (!candidatePaths.length) {
+      throw new Error(`No se encontró el comando o alias: ${target}`)
+    }
+
+    const reloaded: string[] = []
+
+    for (const filePath of candidatePaths) {
+      const resolvedPath = require.resolve(filePath)
+      delete require.cache[resolvedPath]
+
+      if (filePath.includes('/slashCommands/')) {
+        const reloadedCommand = (await import(filePath)).default as SlashCommandType
+        this.slashCommands.set(reloadedCommand.data.name, reloadedCommand)
+        this.slashCommandPaths.set(reloadedCommand.data.name, filePath)
+        reloaded.push(`slash:${reloadedCommand.data.name}`)
+      } else {
+        const reloadedCommand = (await import(filePath)).default as CommandType
+        this.commands.set(reloadedCommand.name, reloadedCommand)
+        this.messageCommandPaths.set(reloadedCommand.name, filePath)
+        if (reloadedCommand.aliases?.length) {
+          for (const alias of reloadedCommand.aliases) {
+            this.messageCommandPaths.set(alias, filePath)
+          }
+        }
+        reloaded.push(`message:${reloadedCommand.name}`)
+      }
+    }
+
+    return reloaded
+  }
+
+  public async ensureEventsLoaded() {
+    if (this.eventPaths.size === 0) {
+      await this.importEvents()
+    }
+  }
+
+  public async reloadEvent(target: string) {
+    await this.ensureEventsLoaded()
+
+    const normalizedTarget = target.toLowerCase().replace(/^event:/i, '').trim()
+    const eventPath = this.eventPaths.get(normalizedTarget)
+
+    if (!eventPath) {
+      throw new Error(`No se encontró el evento: ${target}`)
+    }
+
+    this.removeAllListeners(normalizedTarget)
+    const resolvedPath = require.resolve(eventPath)
+    delete require.cache[resolvedPath]
+
+    const eventModule = (await import(eventPath)).default as Event<keyof ClientEvents>
+    this.eventPaths.set(eventModule.data.name, eventPath)
+
+    if (eventModule.data.once) {
+      this.once(eventModule.data.name, (...args) => {
+        try {
+          eventModule.run(this, ...args)
+        } catch (err) {
+          this.functions.sendGemaError(err as Error)
+        }
+      })
+    } else {
+      this.on(eventModule.data.name, (...args) => {
+        try {
+          eventModule.run(this, ...args)
+        } catch (err) {
+          this.functions.sendGemaError(err as Error)
+        }
+      })
+    }
+
+    return eventModule.data.name
   }
 }

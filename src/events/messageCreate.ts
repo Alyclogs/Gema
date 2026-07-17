@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvable, Message, PermissionResolvable, time } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvable, EmbedBuilder, Message, PermissionResolvable, time } from "discord.js";
 import Bot from "../structures/Bot";
 import { Event } from "../typing/Event";
 import { BoostSettings, FarewellSettings, model as serverconfig, ServerConfig, WelcomerSettings } from "../models/serverconfig-model"
@@ -7,6 +7,7 @@ import config from "../config.json"
 import ExtendedMessage from "../typing/ExtendedMessage";
 import { model as chatbotModel, Chatbot } from "../models/chatbot-model";
 import { autoresponderModel, embedModel } from "../models/gema-models";
+import { isNsfwChannel } from "../util/isNsfwChannel";
 
 export default new Event({
     name: "messageCreate",
@@ -15,6 +16,8 @@ export default new Event({
     async (client: Bot, message: ExtendedMessage) => {
         const { author, guild, content, channel, partial, member } = message
         let { user, autoresponders, embeds, emotes } = client
+        const sendableChannel = ('send' in channel && typeof channel.send === 'function') ? channel : undefined
+        const typingChannel = ('sendTyping' in channel && typeof channel.sendTyping === 'function') ? channel : undefined
 
         if (!guild || author.bot) return
         if (content.includes('@here') || content.includes('@everyone')) return
@@ -53,8 +56,9 @@ export default new Event({
         }
 
         let prefix = serverData?.prefix ? content.toLowerCase().startsWith(serverData.prefix?.toLowerCase()) ? serverData.prefix : config.prefix : config.prefix
-        if (content.toLowerCase().startsWith(prefix?.toLowerCase())) {
-            const args = content.slice(prefix.length).trim().split(/ +/g)
+        let prefixOrMention = content.toLowerCase().startsWith(`<@${user?.id}>`) ? `<@${user?.id}>` : prefix
+        if (content.toLowerCase().startsWith(prefixOrMention?.toLowerCase())) {
+            const args = content.slice(prefixOrMention.length).trim().split(/ +/g)
             const cmd = args.shift()?.toLowerCase()
             const command = cmd ? client.commands.get(cmd) || client.commands.find(c => c.aliases && c.aliases.includes(cmd)) : undefined
             if (command) {
@@ -72,6 +76,17 @@ export default new Event({
                     let permsFaltantes = botperms.filter(dmp => !guild?.members?.me?.permissions.has(dmp.flag as PermissionResolvable)).map(dmp => `\`${dmp.perm}\``).join(', ')
                     return message.reply({
                         content: `${emotes['error']} No tengo suficientes permisos para ejecutar este comando\nPermisos faltantes: ${permsFaltantes}`,
+                    })
+                }
+                if (command.nsfw && !isNsfwChannel(channel)) {
+                    return message.reply({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(client.color)
+                                .setTitle(`${emotes.sweat} Comando NSFW`)
+                                .setDescription('Para ejecutar este comando, el canal debe permitir contenido NSFW')
+                        ],
+                        allowedMentions: { repliedUser: false }
                     })
                 }
                 const cooldownData = `${author.id}_cmd:${cmd}`
@@ -107,7 +122,7 @@ export default new Event({
         if (chatbotData) {
             if (chatbotData.channelId) {
                 if (channel.id === chatbotData.channelId) {
-                    await channel.sendTyping()
+                    await typingChannel?.sendTyping()
                     let chatbot = new Chatbot();
                     chatbot.setData(chatbotData.guildId, chatbotData.channelId, chatbotData.chat)
 
@@ -116,7 +131,7 @@ export default new Event({
                         await message.reply(response);
                         await chatbotModel.findOneAndUpdate({ guildId: guild.id, channelId: channel.id }, { chat: chatbot.chat })
                     } catch (e) {
-                        return await channel.send(`${emotes.sweat} Ha ocurrido un error: \`${e}\``);
+                        return await sendableChannel?.send(`${emotes.sweat} Ha ocurrido un error: \`${e}\``);
                     }
                 }
             }
@@ -152,7 +167,7 @@ export default new Event({
             try {
                 await client.functions.executeAutoresponder(autoresponder, message)
             } catch (e) {
-                return await message.channel.send(`${emotes.error} ${(e as Error).message}`);
+                return await sendableChannel?.send(`${emotes.error} ${(e as Error).message}`);
             }
         }
     })

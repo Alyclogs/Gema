@@ -8,7 +8,8 @@ btnEditSelmData.data.label = 'Editar datos'
 btnEditSelmData.data.emoji = '<:settings:1151582651535347814>'
 
 btnEditSelmData.run = async ({ interaction, client }) => {
-    const selectmenu = interaction.message.components[0].components[0] as StringSelectMenuComponent
+    const firstRow = interaction.message.components[0] as any
+    const selectmenu = firstRow.components[0] as StringSelectMenuComponent
     const gselectmenu = client.selectmenus.filter(s => s.guildId === interaction.guildId).find(s => s.customId === selectmenu.customId) as GSelectMenu
 
     const txtPlaceholder = new TextInputBuilder()
@@ -59,7 +60,7 @@ btnEditSelmData.run = async ({ interaction, client }) => {
     if (gselectmenu.ephemeral) txtEphemeral.setValue(`${gselectmenu.ephemeral}`)
 
     const modalEditData = new ModalBuilder()
-        .setCustomId(`mdlEditSelmData_${gselectmenu.name}`)
+        .setCustomId(`mdlEditSelmData_${gselectmenu.customId}`)
         .setTitle('Datos del menú de selección')
         .setComponents([
             new ActionRowBuilder<ModalActionRowComponentBuilder>()

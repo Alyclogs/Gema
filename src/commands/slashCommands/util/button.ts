@@ -1,8 +1,9 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../structures/Command';
 import { Permissions } from '../../../util/Permissions'
 import { buttonModel, GButton, Autoresponder } from '../../../models/gema-models'
 import ExtendedInteraction from '../../../typing/ExtendedInteraction';
+import { createEmbedPagination } from '../../../util/Pagination';
 
 export default new SlashCommand({
     data: new SlashCommandBuilder()
@@ -18,6 +19,15 @@ export default new SlashCommand({
                 .setName('delete')
                 .setDescription('Elimina un botón')
                 .addStringOption(opt => opt.setName('name').setDescription('El nombre del botón').setRequired(true).setAutocomplete(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('show')
+                .setDescription('Muestra la vista previa de un botón')
+                .addStringOption(opt => opt.setName('name').setDescription('El nombre del botón').setRequired(true).setAutocomplete(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('list')
+                .setDescription('Lista los botones existentes en este servidor'))
         .addSubcommandGroup(group =>
             group
                 .setName('edit')
@@ -47,16 +57,17 @@ export default new SlashCommand({
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 
     async autocomplete({ interaction, args, client }) {
-        await client.syncButtons()
-        const buttonNames = client.buttons.map(b => b.name).filter(b => b !== '')
+        const buttonNames = (await buttonModel.find({ guildId: interaction.guildId }).exec())
+            .map(button => button.name)
+            .filter(name => name !== '')
 
         try {
             const focusedValue = args.getFocused()
             if (!focusedValue) {
-                await interaction.respond(buttonNames.map(choice => ({ name: choice, value: choice })))
+                await interaction.respond(buttonNames.slice(0, 25).map(choice => ({ name: choice, value: choice })))
             } else {
                 const filtered = buttonNames.filter(choice => choice.startsWith(focusedValue))
-                await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })))
+                await interaction.respond(filtered.slice(0, 25).map(choice => ({ name: choice, value: choice })))
             }
 
         } catch (e) {
@@ -73,12 +84,45 @@ export default new SlashCommand({
         const subcommand = args.getSubcommand()
         const group = args.getSubcommandGroup()
 
-        let buttonData = { guildId: interaction.guild?.id, customId: `arbtn_${buttonName}` }
-        let buttonf = client.buttons.get(`arbtn_${buttonName}`)
+        if (subcommand === 'list') {
+            const guildButtons = await buttonModel.find({ guildId: interaction.guildId }).exec()
+            if (!guildButtons.length)
+                return interaction.editReply(`${emojis.error} Aún no hay botones creados en este servidor ${emojis.sweat}`)
+
+            const buttonNames = guildButtons.map(button => `${emojis.dot} ${button.name}`)
+            const pages: EmbedBuilder[] = []
+            for (let index = 0; index < buttonNames.length; index += 10) {
+                pages.push(new EmbedBuilder()
+                    .setColor(color)
+                    .setAuthor({ name: interaction.guild?.name || '', iconURL: interaction.guild?.iconURL() || undefined })
+                    .setTitle('Lista de botones')
+                    .setDescription(buttonNames.slice(index, index + 10).join('\n')))
+            }
+            return createEmbedPagination(interaction as ChatInputCommandInteraction<'cached'>, pages)
+        }
+
+        const buttonData = { guildId: interaction.guild?.id, customId: `arbtn_${buttonName}` }
+        const buttonf = await buttonModel.findOne(buttonData).exec()
+
+        if (subcommand === 'show') {
+            if (!buttonf)
+                return interaction.editReply(`${emojis.hmph} No existe un botón con ese nombre`)
+
+            const button = new ButtonBuilder()
+                .setCustomId(buttonf.customId)
+                .setStyle(buttonf.data.style || ButtonStyle.Primary)
+            if (buttonf.data.label) button.setLabel(buttonf.data.label)
+            if (buttonf.data.emoji) button.setEmoji(buttonf.data.emoji)
+
+            return interaction.editReply({
+                content: `${emojis.check} Botón **${buttonName}**`,
+                components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button)]
+            })
+        }
 
         if (subcommand === 'create') {
             let button = new GButton()
-            if (Array.from(client.buttons.filter(b => b.guildId === interaction.guild?.id)).length == 6)
+            if (await buttonModel.countDocuments({ guildId: interaction.guild?.id }) >= 6)
                 return interaction.editReply(`${emojis.error} Límite de 6 botones por servidor alcanzado. Considera eliminar alguno con /button delete`)
             if (!buttonName) return await interaction.editReply(`${emojis.hmph} Debes especificar un nombre para el botón`)
             if (buttonf) return await interaction.editReply(`${emojis.hmph} Ya existe un botón con ese nombre, prueba a editarlo con /button edit`)
@@ -88,12 +132,14 @@ export default new SlashCommand({
             button.name = buttonName
 
             await buttonModel.create(button)
+            await client.syncButtons()
             return await interaction.editReply(`${emojis.check} El botón **${buttonName}** fue creado correctamente`)
         }
         if (subcommand === 'delete') {
             if (!buttonf) return await interaction.editReply(`${emojis.hmph} No existe un botón con ese nombre, prueba a crearlo con /button create`)
 
             await buttonModel.deleteOne(buttonData)
+            await client.syncButtons()
             return await interaction.editReply(`${emojis.check} El  botón **${buttonName}** fue eliminado correctamente`)
         }
         if (group === 'edit') {
@@ -116,7 +162,8 @@ export default new SlashCommand({
                     ar = await client.functions.createAutoresponder(interaction as ExtendedInteraction, reply)
                 } catch (e) { return interaction.editReply(`${e}`) }
 
-                if (ar) await buttonModel.updateOne(buttonData, { reply: ar.arReply, ephemeral: ephemeral || false })
+                if (ar) await buttonModel.updateOne(buttonData, { reply: ar.arReply, ephemeral: ephemeral ?? false })
+                await client.syncButtons()
 
                 return await interaction.editReply({
                     content: `${emojis.check} Respuesta de botón actualizada`,
@@ -135,13 +182,14 @@ export default new SlashCommand({
                 if (style) prevButton.setStyle(style)
                 if (emoji) prevButton.setEmoji(emoji.trim())
 
-                let newData = {
-                    label: label,
-                    style: style,
-                    emoji: emoji
+                const newData = {
+                    label: label ?? buttonf.data.label,
+                    style: style ?? ([1, 2, 3, 4].includes(Number(buttonf.data.style)) ? Number(buttonf.data.style) : ButtonStyle.Primary),
+                    emoji: emoji ?? buttonf.data.emoji
                 }
 
                 await buttonModel.updateOne(buttonData, { data: newData })
+                await client.syncButtons()
 
                 return await interaction.editReply({
                     content: `${emojis.check} Datos de botón actualizados`,

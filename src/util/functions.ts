@@ -1,15 +1,17 @@
-import { ActionRowBuilder, BaseInteraction, ButtonBuilder, ButtonInteraction, ChatInputCommandInteraction, ColorResolvable, DMChannel, EmbedBuilder, Guild, GuildMember, Message, MessageComponentInteraction, MessageCreateOptions, PermissionResolvable, StringSelectMenuBuilder, TextChannel, time } from "discord.js";
+import { ActionRowBuilder, BaseInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, CollectorFilter, ColorResolvable, DMChannel, EmbedBuilder, Guild, GuildMember, Message, MessageComponentInteraction, MessageCreateOptions, PartialGroupDMChannel, PermissionResolvable, StringSelectMenuBuilder, TextChannel, time } from "discord.js";
 import { variables, getVars, VariableType, testArg } from '../util/Variables';
 import Bot from "../structures/Bot";
-import { EmbedDataType, ArReplyType, Autoresponder, ArChoicedOptionType, ArChoiceOptionsType } from "../models/gema-models";
+import { EmbedDataType, ArReplyType, Autoresponder, ArChoicedOptionType, ArChoiceOptionsType, buttonModel } from "../models/gema-models";
 import { ErrorCodes } from "../util/Errors";
 import { Permissions, Permissions2 } from "./Permissions";
 import ExtendedMessage from "../typing/ExtendedMessage";
 import { CommandPerms } from "../typing/Command";
 import { getFonts } from "./getFonts";
 import { UserCurrency, model as usermodel } from "../models/user-currency";
-import { CollectorFilter } from "discord.js";
 import ExtendedInteraction from "../typing/ExtendedInteraction";
+
+type InputChannel = ExtendedMessage["channel"] | ExtendedInteraction["channel"];
+type SendableChannel = Exclude<NonNullable<InputChannel>, PartialGroupDMChannel>;
 
 export default class Functions {
     client: Bot
@@ -19,7 +21,7 @@ export default class Functions {
     constructor(client: Bot, input?: ChatInputCommandInteraction | ExtendedMessage | BaseInteraction) {
         this.client = client;
         if (input) this.setInput(input);
-        (async () => { await this.client.syncButtons() });
+        void this.client.syncButtons();
     }
 
     public setInput(input: ChatInputCommandInteraction | ExtendedMessage | BaseInteraction) {
@@ -31,26 +33,32 @@ export default class Functions {
         let previewEmbed = new EmbedBuilder()
 
         if (embedData.author?.name || embedData.author?.icon_url) {
-            let icon = embedData.author.icon_url.startsWith('https://') ? embedData.author.icon_url
-                : this.replaceVars(embedData.author.icon_url, variables).startsWith('https://') ? this.replaceVars(embedData.author.icon_url, variables) : undefined;
-            previewEmbed.setAuthor({ name: this.replaceVars(embedData.author.name, variables) || '', iconURL: icon })
+            const authorIcon = embedData.author?.icon_url;
+            const replacedIcon = authorIcon ? this.replaceVars(authorIcon, variables) : '';
+            let icon = authorIcon?.startsWith('https://') ? authorIcon
+                : replacedIcon.startsWith('https://') ? replacedIcon : undefined;
+            previewEmbed.setAuthor({ name: this.replaceVars(embedData.author?.name || '', variables) || '', iconURL: icon })
         }
-        if (embedData.title) previewEmbed.data.title = this.replaceVars(embedData.title, variables) || '';
+        if (embedData.title) previewEmbed.setTitle(this.replaceVars(embedData.title, variables) || '');
         if (embedData.description) {
-            previewEmbed.data.description = this.replaceVars(embedData.description, variables).replace(/\\n/g, '\n')
+            previewEmbed.setDescription(this.replaceVars(embedData.description, variables).replace(/\\n/g, '\n'))
         }
         if (embedData.thumbnail) {
+            const replacedThumbnail = this.replaceVars(embedData.thumbnail, variables)
             if (embedData.thumbnail.startsWith('https://')) previewEmbed.setThumbnail(embedData.thumbnail)
-            if (this.replaceVars(embedData.thumbnail, variables).startsWith('https://')) previewEmbed.setThumbnail(this.replaceVars(embedData.thumbnail, variables))
+            if (replacedThumbnail.startsWith('https://')) previewEmbed.setThumbnail(replacedThumbnail)
         }
         if (embedData.image) {
+            const replacedImage = this.replaceVars(embedData.image, variables)
             if (embedData.image.startsWith('https://')) previewEmbed.setImage(embedData.image);
-            if (this.replaceVars(embedData.image, variables).startsWith('https://')) previewEmbed.setImage(this.replaceVars(embedData.image, variables));
+            if (replacedImage.startsWith('https://')) previewEmbed.setImage(replacedImage);
         }
         if (embedData.footer?.text || embedData.footer?.icon_url) {
-            let icon = embedData.footer.icon_url.startsWith('https://') ? embedData.footer.icon_url
-                : this.replaceVars(embedData.footer.icon_url, variables).startsWith('https://') ? this.replaceVars(embedData.footer.icon_url, variables) : undefined;
-            previewEmbed.setFooter({ text: this.replaceVars(embedData.footer.text, variables) || '', iconURL: icon })
+            const footerIcon = embedData.footer?.icon_url;
+            const replacedIcon = footerIcon ? this.replaceVars(footerIcon, variables) : '';
+            let icon = footerIcon?.startsWith('https://') ? footerIcon
+                : replacedIcon.startsWith('https://') ? replacedIcon : undefined;
+            previewEmbed.setFooter({ text: this.replaceVars(embedData.footer?.text || '', variables) || '', iconURL: icon })
         }
         if (embedData.timestamp) previewEmbed.setTimestamp()
 
@@ -73,10 +81,11 @@ export default class Functions {
                 // Buscado: {user_avatar:@usuario}, encontrado: {user_avatar}
                 // Considerar buscar usuario y reemplazar la variable con el usuario ingresado. Ej. {user_avatar:@usuario} => {user_avatar:<link>}
                 for (let v of vars) {
+                    const baseVarMatch = v.match(/^\{([^}:]+)/)
+                    const baseVarName = baseVarMatch ? `{${baseVarMatch[1]}}` : v
                     const varf = variables
-                        ? variables.find((varb) => v.includes(varb.name))
+                        ? variables.find((varb) => varb.name === v || varb.name === baseVarName)
                         : undefined;
-                    console.log('Variable: ', varf);
                     if (varf) {
                         replaced = replaced.replace(v, varf.value as string);
                     } else replaced = replaced.replace(v, '');
@@ -84,6 +93,10 @@ export default class Functions {
                 return replaced;
             }
         } return str
+    }
+
+    private isSendableChannel(channel: InputChannel | null | undefined): channel is SendableChannel {
+        return !!channel && 'send' in channel && typeof channel.send === 'function';
     }
 
     public async createAutoresponder(input: ExtendedInteraction | Message, reply: string) {
@@ -185,11 +198,15 @@ export default class Functions {
                 if (embeddatas) {
                     for (let data of embeddatas) {
                         data = data.trim()
-                        const dataf = this.client.embeds.find(em => em.name === data)
+                        const dataf = this.client.embeds.find(em => em.guildId === input.guild?.id && em.name === data)
                         if (!/^#([0-9a-f]{6})/i.test(data) && !testArg(data) && !dataf) {
                             throw new Error(ErrorCodes.INVALID_EMBED_DATA_ERROR)
                         } else {
-                            if (dataf) arReply.embeddata = data
+                            if (dataf) {
+                                arReply.embeddata = data
+                                arReply.rawreply = arReply.rawreply.replace(`{embed:${data}}`, '').trim()
+                                arReply.replymessage = arReply.replymessage?.replace(`{embed:${data}}`, '').trim()
+                            }
                             else arReply.embedcolor = data
                             break
                         }
@@ -244,7 +261,9 @@ export default class Functions {
                 const remojis = getVars(reply, '{react:', '}')
                 if (remojis) {
                     for (let e of remojis) {
-                        arTrigger.reactionemojis.push(e)
+                        const emoji = e.trim()
+                        if (!emoji) throw new Error(ErrorCodes.REACTION_ERROR)
+                        arTrigger.reactionemojis.push(emoji)
                     }
                 } else throw new Error(ErrorCodes.REACTION_ERROR)
             }
@@ -253,7 +272,9 @@ export default class Functions {
                 const remojis = getVars(reply, '{reactreply:', '}')
                 if (remojis) {
                     for (let e of remojis) {
-                        arReply.reactionemojis.push(e)
+                        const emoji = e.trim()
+                        if (!emoji) throw new Error(ErrorCodes.REACTION_ERROR)
+                        arReply.reactionemojis.push(emoji)
                     }
                 } else throw new Error(ErrorCodes.REACTION_ERROR)
             }
@@ -393,7 +414,8 @@ export default class Functions {
                     for (let button of buttons) {
                         if (this.client.buttons.get(`arbtn_${button}`)) {
                             arReply.buttons.push(button)
-                            arReply.rawreply.replace(`{button:${button}}`, '')
+                            arReply.rawreply = arReply.rawreply.replace(`{button:${button}}`, '')
+                            arReply.replymessage = arReply.replymessage?.replace(`{button:${button}}`, '')
                         }
                         else throw new Error(ErrorCodes.INVALID_BUTTON_ERROR)
                     }
@@ -406,7 +428,8 @@ export default class Functions {
                     for (let sel of selectmenus) {
                         if (this.client.selectmenus.find(sm => sm.customId === `arselm#${sel}`)) {
                             arReply.selectmenus.push(sel)
-                            arReply.rawreply.replace(`{selectmenu:${sel}}`, '')
+                            arReply.rawreply = arReply.rawreply.replace(`{selectmenu:${sel}}`, '')
+                            arReply.replymessage = arReply.replymessage?.replace(`{selectmenu:${sel}}`, '')
                         }
                         else throw new Error(ErrorCodes.INVALID_BUTTON_ERROR)
                     }
@@ -515,34 +538,42 @@ export default class Functions {
             }
         }
 
+        const getPlaceholderNumbers = (value: string): number[] => {
+            return value.match(/\d+/g)?.map(Number) || []
+        }
+
         const replaceKey = (key: string): string => {
-            const n = key.replace(/\D/g, "").split('').map(nn => Number(nn))
-            var replaced = ''
+            const numbers = getPlaceholderNumbers(key)
+            const firstIndex = numbers[0]
+            const lastIndex = numbers[numbers.length - 1]
+            let replaced = ''
             if (/\[\$\d+\]/i.test(key)) {
-                if (args[n[0] - 1])
-                    return args[n[0] - 1].trim()
+                if (firstIndex && args[firstIndex - 1])
+                    return args[firstIndex - 1].trim()
                 else return ''
             }
             if (/\[\$\d+\-\d+\]/i.test(key)) {
-                for (let i = n[0] - 1; i < n[n.length - 1]; i++) {
+                if (!firstIndex || !lastIndex) return ''
+                for (let i = firstIndex - 1; i < lastIndex; i++) {
                     if (args[i]) replaced = replaced + args[i] + ' '
                 }
                 return replaced?.trim()
             }
             if (/\[\$\d+\+\]/i.test(key)) {
-                for (let i = n[0] - 1; i < args.length; i++) {
+                if (!firstIndex) return ''
+                for (let i = firstIndex - 1; i < args.length; i++) {
                     if (args[i]) replaced = replaced + args[i] + ' '
                 }
                 return replaced?.trim()
             }
             if (/\[range\]/i.test(key) || /\[range\d+\]/i.test(key)) {
                 if (arReply.ranges && arReply.ranges?.length >= 1) {
-                    let range = n[0] ? arReply.ranges.find(r => r.ind == n[0]) : arReply.ranges.find(r => !r.ind)
+                    let range = firstIndex ? arReply.ranges.find(r => r.ind == firstIndex) : arReply.ranges.find(r => !r.ind || r.ind == 0)
                     let rangemin = Number(replaceArgs(range?.min as string) || range?.min)
                     let rangemax = Number(replaceArgs(range?.max as string) || range?.max)
-                    if (rangemin && rangemax) {
-                        if (!isNaN(rangemin) && !isNaN(rangemax)) {
-                            let number = Math.floor((Math.random() * rangemax) + rangemin)
+                    if (!isNaN(rangemin) && !isNaN(rangemax)) {
+                        if (rangemin <= rangemax) {
+                            let number = Math.floor((Math.random() * (rangemax - rangemin + 1)) + rangemin)
                             if (!isNaN(number)) return `${number}`
                             else return 'RANGO_INSUFICIENTE'
                         } else return 'RANGO_NO_CALCULADO'
@@ -551,7 +582,7 @@ export default class Functions {
             }
             if (/\[choice\]/i.test(key) || /\[choice\d+\]/i.test(key)) {
                 if (arReply.choices && arReply.choices?.length >= 1) {
-                    let choice = n[0] ? arReply.choices.find(c => c.ind == n[0]) : arReply.choices.find(ch => !ch.ind || ch.ind == 0)
+                    let choice = firstIndex ? arReply.choices.find(c => c.ind == firstIndex) : arReply.choices.find(ch => !ch.ind || ch.ind == 0)
                     let choosed = choice?.options[Math.floor(Math.random() * choice?.options?.length)]
                     if (choice && choosed) {
                         let schoice: ArChoicedOptionType = { ind: choice.ind || 0, option: { ind: choosed.ind, option: choosed.option } }
@@ -563,7 +594,7 @@ export default class Functions {
             }
             if (/\[choicevalue\]/i.test(key) || /\[choicevalue\d+\]/i.test(key)) {
                 if (arReply.choices && arReply.choices?.length >= 1 && arReply.choicevalues && arReply.choicevalues.length >= 1) {
-                    let choicevalue = n[0] ? arReply.choicevalues.find(c => c.ind == n[0]) : arReply.choicevalues.find(c => !c.ind || c.ind == 0)
+                    let choicevalue = firstIndex ? arReply.choicevalues.find(c => c.ind == firstIndex) : arReply.choicevalues.find(c => !c.ind || c.ind == 0)
                     let matchedchoice = arReply.choices.find(c => c.ind == choicevalue?.ind)
                     if (choicevalue && matchedchoice) {
                         let matchedoption = schoices.find(c => c.ind == matchedchoice?.ind)?.option
@@ -581,25 +612,21 @@ export default class Functions {
             }
             if (/\[choices\d+\]/i.test(key) || /\[choices\]/i.test(key)) {
                 if (arReply.choices && arReply.choices?.length >= 1) {
-                    let choice = n[0] ? arReply.choices.find(c => c.ind == n[0]) : arReply.choices.find(ch => !ch.ind)
+                    let choice = firstIndex ? arReply.choices.find(c => c.ind == firstIndex) : arReply.choices.find(ch => !ch.ind || ch.ind == 0)
                     if (choice) return formatStr(varis, choice.options.map(o => o.option).join('\n')).trim()
                 }
             }
             return key
         }
 
-        const replaceArgs = (keys: string[] | string) => {
-            if (keys) {
-                if (Array.isArray(keys)) {
-                    if (keys.length) {
-                        return keys.map(function (key) {
-                            return replaceKey(key)
-                        })
-                    }
-                } else if (typeof keys === 'string') {
-                    return replaceKey(keys)
-                } return keys
-            } return keys
+        const replaceArgs = (keys?: string[] | string): string[] | string | undefined => {
+            if (Array.isArray(keys)) {
+                return keys.map((key) => replaceKey(key))
+            }
+            if (typeof keys === 'string') {
+                return replaceKey(keys)
+            }
+            return keys
         }
 
         const formatStr = (varis: any[], str: string) => {
@@ -615,11 +642,9 @@ export default class Functions {
                         if (memberf) {
                             varis = variables(memberf).totalvars()
                         }
-                        console.log(key, replaced, newstr)
                     })
                 }
                 newstr = this.replaceVars(newstr, varis).replace(/\\n/g, '\n')
-                console.log(newstr)
                 return newstr || str
             } return str
         }
@@ -647,7 +672,22 @@ export default class Functions {
         let canal = arReply.waitresponse?.channel ? replaceKey(arReply.waitresponse.channel) : undefined
         let wtime = arReply.waitresponse?.time ? Number(replaceKey(arReply.waitresponse?.time)) : undefined
 
-        botresponse = botresponse.replace(/\\n/g, '\n')
+        const referencedEmbedData = arReply.embeddata
+            ? this.client.embeds.find(embedData =>
+                embedData.guildId === message.guild.id && embedData.name === arReply.embeddata
+            )?.data
+            : undefined
+
+        if (arReply.embeddata && !referencedEmbedData) {
+            throw new Error(
+                `El autoresponder "${arTrigger.triggerkey}" usa el embed "${arReply.embeddata}", pero ese embed ya no existe en este servidor. Vuelve a crearlo o edita la respuesta del autoresponder.`
+            )
+        }
+
+        botresponse = botresponse
+            .replace(/\s*{embed:[^}]+}/gi, '')
+            .replace(/\\n/g, '\n')
+            .trim()
 
         if (embedcolor) {
             try {
@@ -675,9 +715,8 @@ export default class Functions {
             }
         }
 
-        if (arReply.embeddata) {
-            const embedData = this.client.embeds.filter(em => em.guildId === message.guild?.id).find(em => em.name === arReply.embeddata)?.data
-
+        if (referencedEmbedData) {
+            const embedData = referencedEmbedData
             if (embedData) {
                 previewEmbed = new EmbedBuilder()
                 if (embedData.author?.name || embedData.author?.icon_url) {
@@ -710,9 +749,9 @@ export default class Functions {
         }
         let requiredperm: PermissionResolvable[] = []
         if (arReply.requiredperm?.length) {
-            requiredperm = requiredperm.map(function (perm) {
-                return Permissions2.find(p => p.perm === perm)?.flag
-            }) as PermissionResolvable[]
+            requiredperm = arReply.requiredperm
+                .map((perm) => Permissions2.find(p => p.perm === perm)?.flag)
+                .filter((perm): perm is PermissionResolvable => perm !== undefined)
         }
 
         let m: Message | undefined = undefined
@@ -943,22 +982,25 @@ export default class Functions {
         const { channel, guild, member } = message
         if (!channel) return
 
+        const sendChannel = this.isSendableChannel(channel) ? channel : undefined
+
         const replaceKey = (key: string) => {
             if (!this.varis) throw new Error('La instancia de funciones no tiene asignada variables')
 
-            const n = key.replace(/\D/g, "").split('').map(nn => Number(nn));
+            const numbers = key.match(/\d+/g)?.map(Number) || [];
+            const firstIndex = numbers[0];
             if (/({\w+:?.*?(?:(?<=\{)\w*(?=\}).+?)*})/i.test(key)) {
                 const varf = this.varis.find(varb => varb.name === key)
                 if (varf) return varf.value as string
             }
             if (/\[range\]/i.test(key) || /\[range\d+\]/i.test(key)) {
                 if (arReply.ranges && arReply.ranges?.length >= 1) {
-                    let range = n[0] ? arReply.ranges.find(r => r.ind == n[0]) : arReply.ranges.find(r => !r.ind)
+                    let range = firstIndex ? arReply.ranges.find(r => r.ind == firstIndex) : arReply.ranges.find(r => !r.ind || r.ind == 0)
                     let rangemin = Number(replaceKey(range?.min as string) || range?.min)
                     let rangemax = Number(replaceKey(range?.max as string) || range?.max)
-                    if (rangemin && rangemax) {
-                        if (!isNaN(rangemin) && !isNaN(rangemax)) {
-                            let number = Math.floor((Math.random() * rangemax) + rangemin)
+                    if (!isNaN(rangemin) && !isNaN(rangemax)) {
+                        if (rangemin <= rangemax) {
+                            let number = Math.floor((Math.random() * (rangemax - rangemin + 1)) + rangemin)
                             if (!isNaN(number)) return `${number}`
                             else return 'RANGO_INSUFICIENTE'
                         } else return 'RANGO_NO_CALCULADO'
@@ -967,7 +1009,7 @@ export default class Functions {
             }
             if (/\[choice\]/i.test(key) || /\[choice\d+\]/i.test(key)) {
                 if (arReply.choices && arReply.choices?.length >= 1) {
-                    let choice = n[0] ? arReply.choices.find(c => c.ind == n[0]) : arReply.choices.find(ch => !ch.ind)
+                    let choice = firstIndex ? arReply.choices.find(c => c.ind == firstIndex) : arReply.choices.find(ch => !ch.ind || ch.ind == 0)
                     let choosed = choice?.options[Math.floor(Math.random() * choice?.options?.length)]
                     if (choosed) {
                         schoice = { ind: choice?.ind || 0, option: { ind: choosed?.ind, opt: choosed?.option } }
@@ -977,15 +1019,15 @@ export default class Functions {
             }
             if (/\[choicevalue\]/i.test(key) || /\[choicevalue\d+\]/i.test(key)) {
                 if (arReply.choices && arReply.choices?.length >= 1 && arReply.choicevalues && arReply.choicevalues.length >= 1) {
-                    let choicevalue = n[0] ? arReply.choicevalues.find(c => c.ind == n[0]) : arReply.choicevalues.find(c => !c.ind)
-                    let choosedvalue = schoice?.option?.ind ? choicevalue?.options[schoice.option.ind].option : undefined
+                    let choicevalue = firstIndex ? arReply.choicevalues.find(c => c.ind == firstIndex) : arReply.choicevalues.find(c => !c.ind || c.ind == 0)
+                    let choosedvalue = schoice?.option ? choicevalue?.options[schoice.option.ind]?.option : undefined
                     schoicevalue = { ind: choicevalue?.ind || 0, option: choosedvalue }
                     if (choicevalue && schoicevalue.option) return this.replaceVars(schoicevalue.option, variss)?.replace(/\\n/g, '\n').trim()
                 }
             }
             if (/\[choices\d+\]/i.test(key) || /\[choices\]/i.test(key)) {
                 if (arReply.choices && arReply.choices?.length >= 1) {
-                    let choice = n[0] ? arReply.choices.find(c => c.ind == n[0]) : arReply.choices.find(ch => !ch.ind)
+                    let choice = firstIndex ? arReply.choices.find(c => c.ind == firstIndex) : arReply.choices.find(ch => !ch.ind || ch.ind == 0)
                     if (choice) return this.replaceVars(choice.options.map(o => o.option).join('\n'), variss).trim()
                 }
             }
@@ -1001,6 +1043,7 @@ export default class Functions {
         let autodeletetime = Number(replaceKey(arReply.autodelete?.time)) || Number(arReply.autodelete?.time)
         let row1: ActionRowBuilder<ButtonBuilder> | undefined = undefined
         let row2: ActionRowBuilder<StringSelectMenuBuilder> | undefined = undefined
+        let responseMessage: Message | undefined = undefined
 
         if (arReply.embeddata) {
             const embedData = this.client.embeds.filter(em => em.guildId === message.guild?.id).find(em => em.name === arReply.embeddata)?.data
@@ -1014,49 +1057,49 @@ export default class Functions {
         }
         if (arReply.addrole?.length) {
             if (!guild?.members.me?.permissions.has(Permissions.gestionarRoles.flag))
-                return channel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.NOT_ENOUGH_PERMS([Permissions.gestionarRoles?.perm])}`)
+                return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.NOT_ENOUGH_PERMS([Permissions.gestionarRoles?.perm])}`)
             for (let roledata of arReply.addrole) {
                 let role = guild.roles.cache.get((replaceKey(roledata.role) as string).replace(/[\\<>@#&!]/g, "").trim())
-                if (!role) return channel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.INVALID_ROLE_ERROR}`)
+                if (!role) return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.INVALID_ROLE_ERROR}`)
                 if (role.position > guild.members.me.roles.highest.position)
-                    return channel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ROLE_POSITION_ERROR}`)
+                    return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ROLE_POSITION_ERROR}`)
                 if (roledata.user) {
                     let $user = guild.members.cache.get((replaceKey(roledata.user) as string).replace(/[\\<>@#&!]/g, "").trim())
                     if ($user) {
                         if ($user.permissions.has(Permissions.administrador.flag))
-                            return channel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR}`)
+                            return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR}`)
                         if ($user.roles.cache.has(role.id))
-                            return channel?.send(`${this.client.emotes.error} \`ERROR\`: El miembro ya tiene asignado ese rol`)
-                        $user.roles.add(role).catch(async () => await channel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ADD_REMOVE_ROLE_ERROR}`))
+                            return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: El miembro ya tiene asignado ese rol`)
+                        $user.roles.add(role).catch(async () => await sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ADD_REMOVE_ROLE_ERROR}`))
                     }
                 } else {
                     if (member.permissions.has(Permissions.administrador.flag))
-                        return channel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR}`)
+                        return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR}`)
                     if (member.roles.cache.has(role.id))
-                        return channel?.send(`${this.client.emotes.error} \`ERROR\`: El miembro ya tiene asignado ese rol`)
-                    member.roles.add(role).catch(async () => await channel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ADD_REMOVE_ROLE_ERROR}`))
+                        return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: El miembro ya tiene asignado ese rol`)
+                    member.roles.add(role).catch(async () => await sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ADD_REMOVE_ROLE_ERROR}`))
                 }
             }
         }
         if (arReply.removerole?.length) {
             if (!guild.members.me?.permissions.has(Permissions.gestionarRoles.flag))
-                return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.NOT_ENOUGH_PERMS([Permissions.gestionarRoles.perm])}`)
+                return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.NOT_ENOUGH_PERMS([Permissions.gestionarRoles.perm])}`)
             for (let roledata of arReply.removerole) {
                 let role = guild.roles.cache.get((replaceKey(roledata.role) as string).replace(/[\\<>@#&!]/g, "").trim())
-                if (!role) return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.INVALID_ROLE_ERROR}`)
+                if (!role) return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.INVALID_ROLE_ERROR}`)
                 if (role.position > guild.members.me.roles.highest.position)
-                    return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ROLE_POSITION_ERROR}`)
+                    return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ROLE_POSITION_ERROR}`)
                 if (roledata.user) {
                     let $user = guild.members.cache.get((replaceKey(roledata.user) as string).replace(/[\\<>@#&!]/g, "").trim())
                     if ($user) {
                         if ($user.permissions.has(Permissions.administrador.flag))
-                            return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR}`)
-                        $user.roles.remove(role).catch(async () => await channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ADD_REMOVE_ROLE_ERROR}`))
+                            return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR}`)
+                        $user.roles.remove(role).catch(async () => await sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ADD_REMOVE_ROLE_ERROR}`))
                     }
                 } else {
                     if (member.permissions.has(Permissions.administrador.flag))
-                        return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR}`)
-                    member.roles.remove(role).catch(async () => await channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ADD_REMOVE_ROLE_ERROR}`))
+                        return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR}`)
+                    member.roles.remove(role).catch(async () => await sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ADD_REMOVE_ROLE_ERROR}`))
                 }
             }
         }
@@ -1064,13 +1107,13 @@ export default class Functions {
             const nickname = replaceKey(arReply.setnick.nick)
             const nickuser = arReply.setnick.user ? replaceKey(arReply.setnick.user) : undefined
             if (!guild.members.me?.permissions.has(Permissions.gestionarApodos.flag))
-                return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.NOT_ENOUGH_PERMS([Permissions.gestionarApodos.perm])}`)
+                return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.NOT_ENOUGH_PERMS([Permissions.gestionarApodos.perm])}`)
             if (member.roles.highest.position > guild.members.me.roles.highest.position)
-                return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ROLE_POSITION_ERROR2}`)
+                return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.ROLE_POSITION_ERROR2}`)
             const user = nickuser ? guild.members.cache.get(nickuser.replace(/[\\<>@#&!]/g, "")) : member
             if (user?.permissions.has(Permissions.administrador.flag))
-                return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR2}`)
-            user?.setNickname(nickname).catch(async () => await channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.SET_NICK_ERROR}`))
+                return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MEMBER_ISADMINISTRATOR2}`)
+            user?.setNickname(nickname).catch(async () => await sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.SET_NICK_ERROR}`))
         }
 
         if (arReply.font) {
@@ -1088,9 +1131,9 @@ export default class Functions {
                 } else user = await usermodel.findOne({ userId: message instanceof Message ? message.author.id : message.user.id }).exec() as UserCurrency
                 let sym = bal.cant.match(/(\+|\-)/)?.[0]
                 let cant = Number(replaceKey(bal.cant.replace(/[\+\-]/, ""))) || 0
-                if (!sym || !cant || !user) return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.INVALID_MODIFYBALL}`)
+                if (!sym || !cant || !user) return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.INVALID_MODIFYBALL}`)
                 let newcant = sym === '+' ? (user.balance || 0) + cant : (user.balance || 0) - cant
-                if (newcant < 0) return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MODIFYBAL_ERROR}`)
+                if (newcant < 0) return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MODIFYBAL_ERROR}`)
                 await usermodel.updateOne({ userId: user.userId }, { balance: newcant })
             }
         }
@@ -1099,9 +1142,29 @@ export default class Functions {
             let allbtns: ButtonBuilder[] = []
 
             for (let button of arReply.buttons) {
-                let btn = this.client.buttons.get(`arbtn_${button}`)
+                const btn = await buttonModel.findOne({
+                    guildId: guild.id,
+                    customId: `arbtn_${button}`
+                }).exec()
                 if (btn) {
-                    allbtns.push(btn.getButton())
+                    try {
+                        const storedStyle = Number(btn.data.style)
+                        const style = [
+                            ButtonStyle.Primary,
+                            ButtonStyle.Secondary,
+                            ButtonStyle.Success,
+                            ButtonStyle.Danger
+                        ].includes(storedStyle) ? storedStyle : ButtonStyle.Primary
+                        const buttonBuilder = new ButtonBuilder()
+                            .setCustomId(btn.customId)
+                            .setStyle(style)
+                        if (btn.data.label) buttonBuilder.setLabel(btn.data.label)
+                        if (btn.data.emoji) buttonBuilder.setEmoji(btn.data.emoji)
+                        buttonBuilder.toJSON()
+                        allbtns.push(buttonBuilder)
+                    } catch (error) {
+                        console.error(`[⚠️] El botón ${button} tiene datos inválidos y fue omitido:`, error)
+                    }
                 }
             }
             if (allbtns.length) row1 = new ActionRowBuilder<ButtonBuilder>().setComponents(allbtns)
@@ -1112,13 +1175,24 @@ export default class Functions {
             let allselms: StringSelectMenuBuilder[] = []
 
             for (let selm of arReply.selectmenus) {
-                let slm = this.client.selectmenus.find(s => s.customId === `arselm#${selm}`)
+                let slm = this.client.selectmenus.find(s => s.guildId === guild.id && s.customId === `arselm#${selm}`)
                 if (slm) {
                     let select = new StringSelectMenuBuilder()
                         .setCustomId(slm.customId)
-                        .setOptions(slm.data.options || [{ label: "Opción de ejemplo", value: "ejemplo", description: "Descripción de ejemplo" }])
-                    if (slm.data.minValues) select.setMinValues(slm.data.minValues)
-                    if (slm.data.maxValues) select.setMinValues(slm.data.maxValues)
+                        .setOptions((slm.data.options?.length ? slm.data.options : [{
+                            label: 'Opción de ejemplo',
+                            value: 'ejemplo',
+                            description: 'Este menú aún no tiene opciones'
+                        }]).map(option => ({
+                            label: option.label,
+                            value: option.value,
+                            description: option.description,
+                            emoji: option.emoji as any
+                        })))
+                    const optionCount = Math.max(slm.data.options?.length ?? 0, 1)
+                    const maxValues = Math.min(slm.data.maxValues ?? 1, optionCount)
+                    const minValues = Math.min(slm.data.minValues ?? 1, maxValues)
+                    select.setMinValues(minValues).setMaxValues(maxValues)
                     if (slm.data.placeholder) select.setPlaceholder(slm.data.placeholder)
                     allselms.push(select)
                 }
@@ -1129,30 +1203,30 @@ export default class Functions {
             switch (wheretosend) {
                 case "current_channel": {
                     if (arReply.replytype === "message") {
-                        if (message instanceof MessageComponentInteraction) await message.editReply({ content: botresponse, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
-                        else await channel.send({ content: botresponse, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                        if (message instanceof MessageComponentInteraction) responseMessage = await message.editReply({ content: botresponse, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) }) as Message
+                        else responseMessage = await sendChannel?.send({ content: botresponse, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
                     } else if (arReply.replytype === "embed") {
                         if (embed?.data) {
-                            if (message instanceof MessageComponentInteraction) await message.editReply({ embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
-                            else await channel.send({ embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                            if (message instanceof MessageComponentInteraction) responseMessage = await message.editReply({ embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) }) as Message
+                            else responseMessage = await sendChannel?.send({ embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
                         } else {
-                            if (message instanceof MessageComponentInteraction) await message.editReply({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
-                            else await channel.send({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                            if (message instanceof MessageComponentInteraction) responseMessage = await message.editReply({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) }) as Message
+                            else responseMessage = await sendChannel?.send({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
                         }
                     }
                     break
                 }
                 case "user_dm": {
                     if (arReply.replytype === "message") {
-                        if (message instanceof Message) await message.author.send({ content: `Autoresponder de **${guild.name}**\n\n${botresponse}`, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
-                        else message.user.send({ content: `Autoresponder de **${guild.name}**\n\n${botresponse}`, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                        if (message instanceof Message) responseMessage = await message.author.send({ content: `Autoresponder de **${guild.name}**\n\n${botresponse}`, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                        else responseMessage = await message.user.send({ content: `Autoresponder de **${guild.name}**\n\n${botresponse}`, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
                     } else if (arReply.replytype === "embed") {
                         if (embed?.data) {
-                            if (message instanceof Message) await message.author.send({ content: `Autoresponder de **${guild.name}**\n\n`, embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
-                            else await member.user.send({ content: `Autoresponder de **${guild.name}**\n\n`, embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                            if (message instanceof Message) responseMessage = await message.author.send({ content: `Autoresponder de **${guild.name}**\n\n`, embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                            else responseMessage = await member.user.send({ content: `Autoresponder de **${guild.name}**\n\n`, embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
                         } else {
-                            if (message instanceof MessageComponentInteraction) await message.editReply({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
-                            else await channel.send({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                            if (message instanceof MessageComponentInteraction) responseMessage = await message.editReply({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) }) as Message
+                            else responseMessage = await sendChannel?.send({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
                         }
                     }
                     break
@@ -1161,23 +1235,23 @@ export default class Functions {
                     const chnl = this.client.channels.cache.get(wheretosend) as TextChannel | DMChannel
                     if (chnl) {
                         if (arReply.replytype === "message") {
-                            await chnl.send({ content: botresponse, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                            responseMessage = await chnl.send({ content: botresponse, components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
                         } else if (arReply.replytype === "embed") {
-                            if (embed?.data) await chnl.send({ embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
-                            else await channel.send({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                            if (embed?.data) responseMessage = await chnl.send({ embeds: [embed], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
+                            else responseMessage = await sendChannel?.send({ embeds: [new EmbedBuilder().setColor(this.client.color).setDescription(botresponse)], components: ([] as any[]).concat(row1, row2).filter(row => row !== undefined) })
                         }
                     }
                     break
                 }
             }
-            if (reactionemojis) {
+            if (responseMessage && reactionemojis.length) {
                 for (let reaction of reactionemojis) {
-                    if (message instanceof Message) await message.react(reaction).catch(async () => await channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.REACTION_ERROR}`))
+                    await responseMessage.react(reaction).catch(async () => await sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.REACTION_ERROR}`))
                 }
             }
             if (arReply.autodelete?.value) {
                 if (!guild.members.me?.permissions.has(Permissions.gestionarMensajes.flag))
-                    return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.NOT_ENOUGH_PERMS([Permissions.gestionarMensajes.perm])}`)
+                    return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.NOT_ENOUGH_PERMS([Permissions.gestionarMensajes.perm])}`)
                 if (autodeletetime) {
                     try {
                         setTimeout(() => {
@@ -1187,8 +1261,8 @@ export default class Functions {
                     } catch (e) { console.log(e) }
                 }
                 else {
-                    if (message instanceof Message) message.delete().catch(async () => await channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.DELETE_MESSAGE_ERROR}`))
-                    else if (message.isMessageComponent()) message.deleteReply().catch(async () => await channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.DELETE_MESSAGE_ERROR}`))
+                    if (message instanceof Message) message.delete().catch(async () => await sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.DELETE_MESSAGE_ERROR}`))
+                    else if (message.isMessageComponent()) message.deleteReply().catch(async () => await sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.DELETE_MESSAGE_ERROR}`))
                 }
             }
         }
