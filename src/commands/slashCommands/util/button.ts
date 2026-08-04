@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../structures/Command';
-import { Permissions } from '../../../util/Permissions'
+import { Permissions } from '../../../lib/Permissions'
 import { buttonModel, GButton, Autoresponder } from '../../../models/gema-models'
 import ExtendedInteraction from '../../../typing/ExtendedInteraction';
 import { createEmbedPagination } from '../../../util/Pagination';

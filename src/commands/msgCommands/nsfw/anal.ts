@@ -1,6 +1,6 @@
 import { EmbedBuilder } from 'discord.js'
-import { Permissions } from '../../../util/Permissions';
-import nsfw from '../../../util/actions'
+import { Permissions } from '../../../lib/Permissions';
+import nsfw from '../../../lib/actions'
 import { Command } from '../../../structures/Command';
 
 export default new Command({

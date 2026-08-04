@@ -1,6 +1,6 @@
 import { ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, SelectMenuComponentOptionData, ComponentEmojiResolvable, ButtonBuilder, ChatInputCommandInteraction, ButtonStyle } from 'discord.js';
 import { SlashCommand } from '../../../structures/Command';
-import { Permissions } from '../../../util/Permissions'
+import { Permissions } from '../../../lib/Permissions'
 import { Autoresponder, GButton, GSelectMenu, GSelectMenuOption, buttonModel, selectmenuModel } from '../../../models/gema-models';
 import ExtendedInteraction from '../../../typing/ExtendedInteraction';
 import { createEmbedPagination } from '../../../util/Pagination';
@@ -118,6 +118,7 @@ export default new SlashCommand({
 
         } catch (e) {
             console.log(`a: ${e}`)
+            await interaction.respond([]);
         }
     },
 
@@ -347,11 +348,13 @@ export default new SlashCommand({
                 const remainingCount = Math.max(alloptions.length, 1)
                 const nextMax = Math.min(selectmenuf.data.maxValues ?? 1, remainingCount)
                 const nextMin = Math.min(selectmenuf.data.minValues ?? 1, nextMax)
-                await selectmenuModel.updateOne(selmData, { $set: {
-                    'data.options': alloptions,
-                    'data.minValues': nextMin,
-                    'data.maxValues': nextMax
-                } })
+                await selectmenuModel.updateOne(selmData, {
+                    $set: {
+                        'data.options': alloptions,
+                        'data.minValues': nextMin,
+                        'data.maxValues': nextMax
+                    }
+                })
                 prevSelm.setMinValues(nextMin).setMaxValues(nextMax)
                 prevSelm.setOptions(alloptions.length ? normalizeSelectMenuOptions(alloptions) : [{
                     label: 'Opción de ejemplo', value: 'ejemplo', description: 'Añade opciones para activar este menú'

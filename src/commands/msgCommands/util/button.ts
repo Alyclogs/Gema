@@ -9,7 +9,7 @@ import {
   buttonModel,
   GButton
 } from '../../../models/gema-models';
-import { Permissions } from '../../../util/Permissions';
+import { Permissions } from '../../../lib/Permissions';
 import { createEmbedPagination } from '../../../util/Pagination';
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';
@@ -242,9 +242,8 @@ export default new Command({
       });
       await client.syncButtons();
       return message.reply({
-        content: `${emojis.check} Respuesta del botón actualizada${
-          ephemeral ? ' como efímera' : ''
-        }`,
+        content: `${emojis.check} Respuesta del botón actualizada${ephemeral ? ' como efímera' : ''
+          }`,
         components: [
           new ActionRowBuilder<ButtonBuilder>().addComponents(preview)
         ]

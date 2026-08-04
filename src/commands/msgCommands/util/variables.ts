@@ -1,7 +1,7 @@
 import { CommandType } from '../../../typing/Command';
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
-import { variables as getVariables, functions as utilFunctions } from '../../../util/Variables';
-import emojis from '../../../util/emojis.json';
+import { variables as getVariables, functions as utilFunctions } from '../../../lib/Variables';
+import emojis from '../../../lib/emojis.json';
 
 const command: CommandType = {
     name: 'variables',
@@ -27,6 +27,7 @@ const command: CommandType = {
                     .setColor(client.color as any)
                     .addFields(
                         { name: 'Descripción', value: func.description || 'Sin descripción' },
+                        { name: 'Dónde se puede usar', value: func.usableIn?.length ? func.usableIn.join(', ') : 'Sin especificar' },
                         { name: 'Uso', value: func.uso || 'Sin uso especificado' }
                     )
                 if (func.ejemplo) embed.addFields({ name: 'Ejemplo', value: func.ejemplo })
@@ -43,7 +44,8 @@ const command: CommandType = {
                     .setColor(client.color as any)
                     .addFields(
                         { name: 'Valor de ejemplo', value: v.value ? `${v.value}` : 'Sin valor' },
-                        { name: 'Descripción', value: v.description || 'Sin descripción' }
+                        { name: 'Descripción', value: v.description || 'Sin descripción' },
+                        { name: 'Dónde se puede usar', value: v.usableIn?.length ? v.usableIn.join(', ') : 'Sin especificar' }
                     )
                 return message.reply({ embeds: [embed] })
             }

@@ -1,6 +1,6 @@
 import { readdirSync } from 'fs';
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
-import { Permissions } from '../../../util/Permissions';
+import { Permissions } from '../../../lib/Permissions';
 import { Command } from '../../../structures/Command';
 
 export default new Command({

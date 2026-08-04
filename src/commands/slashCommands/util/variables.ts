@@ -1,6 +1,6 @@
 import { ActionRowBuilder, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder } from "discord.js"
 import { SlashCommandType } from "../../../typing/Command"
-import { variables as getVariables, functions as utilFunctions } from '../../../util/Variables';
+import { variables as getVariables, functions as utilFunctions } from '../../../lib/Variables';
 
 const command: SlashCommandType = {
     data: new SlashCommandBuilder()
@@ -35,6 +35,7 @@ const command: SlashCommandType = {
                     .setColor(client.color as any)
                     .addFields(
                         { name: 'Descripción', value: func.description || 'Sin descripción' },
+                        { name: 'Dónde se puede usar', value: func.usableIn?.length ? func.usableIn.join(', ') : 'Sin especificar' },
                         { name: 'Uso', value: func.uso || 'Sin uso especificado' }
                     )
                 if (func.ejemplo) embed.addFields({ name: 'Ejemplo', value: func.ejemplo })
@@ -51,7 +52,8 @@ const command: SlashCommandType = {
                     .setColor(client.color as any)
                     .addFields(
                         { name: 'Valor de ejemplo', value: v.value ? `${v.value}` : 'Sin valor' },
-                        { name: 'Descripción', value: v.description || 'Sin descripción' }
+                        { name: 'Descripción', value: v.description || 'Sin descripción' },
+                        { name: 'Dónde se puede usar', value: v.usableIn?.length ? v.usableIn.join(', ') : 'Sin especificar' }
                     )
                 return interaction.editReply({ embeds: [embed] })
             }

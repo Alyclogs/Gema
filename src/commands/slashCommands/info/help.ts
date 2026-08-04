@@ -2,7 +2,7 @@ import { SlashCommand } from "../../../structures/Command"
 import { SlashCommandType } from "../../../typing/Command"
 import { readdirSync } from "fs"
 import { Client, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ChatInputCommandInteraction } from 'discord.js'
-import { Permissions } from '../../../util/Permissions'
+import { Permissions } from '../../../lib/Permissions'
 
 export default new SlashCommand({
     data: new SlashCommandBuilder()

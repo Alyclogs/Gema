@@ -1,5 +1,5 @@
 import { Command } from "../../../structures/Command";
-import { Permissions } from "../../../util/Permissions";
+import { Permissions } from "../../../lib/Permissions";
 
 export default new Command({
     name: 'say',

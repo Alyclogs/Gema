@@ -1,6 +1,6 @@
-import { ApplicationCommandDataResolvable, AutocompleteInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, Message, MessageComponentInteraction, PermissionResolvable, SlashCommandBuilder, SlashCommandOptionsOnlyBuilder, SlashCommandSubcommandsOnlyBuilder, StringSelectMenuInteraction } from "discord.js";
+import { ApplicationCommandDataResolvable, AutocompleteInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, Message, MessageComponentInteraction, ModalSubmitInteraction, PermissionResolvable, SlashCommandBuilder, SlashCommandOptionsOnlyBuilder, SlashCommandSubcommandsOnlyBuilder, StringSelectMenuInteraction } from "discord.js";
 import Bot from "../structures/Bot";
-import emojis from "../util/emojis.json"
+import emojis from "../lib/emojis.json"
 
 export interface SlashCommandRunOptions {
   client: Bot;
@@ -23,6 +23,17 @@ export interface ComponentRunOptions {
   interaction: MessageComponentInteraction
   color: ColorResolvable
   emojis: typeof emojis;
+  /** Cuando el botón se resolvió por prefijo (`prefix: true`), contiene lo que sigue del customId despues del prefijo */
+  params?: string
+}
+
+export interface ModalRunOptions {
+  client: Bot
+  interaction: ModalSubmitInteraction
+  color: ColorResolvable
+  emojis: typeof emojis;
+  /** Cuando el modal se resolvió por prefijo (`prefix: true`), contiene lo que sigue del customId despues del prefijo */
+  params?: string
 }
 
 interface CommandRunOptions {

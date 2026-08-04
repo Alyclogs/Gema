@@ -1,7 +1,7 @@
 import mongoose, { mongo } from 'mongoose';
 import { bot } from '..'
-import { ButtonBuilder, ButtonStyle, ColorResolvable, ComponentType, Message, ModalBuilder, SelectMenuComponentOptionData, StringSelectMenuComponentData } from 'discord.js'
-import { ComponentRunOptions } from '../typing/Command'
+import { ButtonBuilder, ButtonStyle, ColorResolvable, ComponentType, Message, SelectMenuComponentOptionData, StringSelectMenuComponentData } from 'discord.js'
+import { ComponentRunOptions, ModalRunOptions } from '../typing/Command'
 
 class Autoresponder {
     guildId: string = ''
@@ -51,8 +51,26 @@ class GEmbed {
 
 class GButton {
     private contador: number = 1
-    constructor() {
+    constructor(buttonOptions?: { guildId?: string, customId: string, style?: number, label?: string, name?: string, emoji?: string, prefix?: boolean, run?: (options: ComponentRunOptions) => Promise<any> }) {
         this.contador++;
+        if (buttonOptions) {
+            if (buttonOptions.guildId) {
+                this.guildId = buttonOptions.guildId;
+            }
+            this.customId = buttonOptions.customId;
+            if (buttonOptions.style !== undefined) this.data.style = buttonOptions.style;
+            if (buttonOptions.label !== undefined) this.data.label = buttonOptions.label;
+            this.name = buttonOptions.name || this.customId;
+            if (buttonOptions.emoji) {
+                this.data.emoji = buttonOptions.emoji;
+            }
+            if (buttonOptions.prefix) {
+                this.prefix = buttonOptions.prefix;
+            }
+            if (buttonOptions.run) {
+                this.run = buttonOptions.run;
+            }
+        }
     }
     guildId: string = ''
     customId: string = 'GButton' + this.contador
@@ -63,6 +81,8 @@ class GButton {
     }
     ephemeral?: boolean
     reply?: ArReplyType
+    /** Si es `true`, este botón se ejecuta para cualquier customId que empiece con `this.customId` (ver `Bot.resolveButton`) */
+    prefix?: boolean
     run?: (options: ComponentRunOptions) => Promise<any>
 
     setData(guildId: string, data: { customId: string, style: number, label: string, name?: string, emoji?: string }): GButton {
@@ -103,17 +123,25 @@ class GSelectMenu {
     }
     ephemeral?: boolean
     reply?: ArReplyType
+    /** Si es `true`, este selectmenu se ejecuta para cualquier customId que empiece con `this.customId` (ver `Bot.resolveSelectMenu`) */
+    prefix?: boolean
     run?: (options: ComponentRunOptions) => Promise<any>
 }
 
 class GModal {
-    constructor(modalOptions: GModalType) {
-        Object.assign(this, modalOptions)
+    private contador: number = 1
+    constructor(modalOptions?: { customId: string, prefix?: boolean, run?: (options: ModalRunOptions) => Promise<any> }) {
+        this.contador++;
+        if (modalOptions) {
+            this.customId = modalOptions.customId
+            if (modalOptions.prefix) this.prefix = modalOptions.prefix
+            if (modalOptions.run) this.run = modalOptions.run
+        }
     }
-}
-
-type GModalType = ModalBuilder & {
-    run?: (options: ComponentRunOptions) => Promise<any>
+    customId: string = 'GModal' + this.contador
+    /** Si es `true`, este modal se ejecuta para cualquier customId que empiece con `this.customId` (ver `Bot.resolveModal`) */
+    prefix?: boolean
+    run?: (options: ModalRunOptions) => Promise<any>
 }
 
 class GMessage {

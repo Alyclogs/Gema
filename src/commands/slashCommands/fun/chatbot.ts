@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CollectorFilter, EmbedBuilder, Message, MessageComponentInteraction, SlashCommandBuilder, StringSelectMenuInteraction } from "discord.js";
 import { SlashCommand } from "../../../structures/Command";
-import { Permissions } from '../../../util/Permissions';
+import { Permissions } from '../../../lib/Permissions';
 import { Chatbot, model as chatbotModel } from '../../../models/chatbot-model';
 import { GButton } from "../../../models/gema-models";
 

@@ -1,12 +1,13 @@
 import { ActionRowBuilder, BaseInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, CollectorFilter, ColorResolvable, DMChannel, EmbedBuilder, Guild, GuildMember, Message, MessageComponentInteraction, MessageCreateOptions, PartialGroupDMChannel, PermissionResolvable, StringSelectMenuBuilder, TextChannel, time } from "discord.js";
-import { variables, getVars, VariableType, testArg } from '../util/Variables';
+import { variables, getVars, VariableType, testArg } from '../lib/Variables';
 import Bot from "../structures/Bot";
 import { EmbedDataType, ArReplyType, Autoresponder, ArChoicedOptionType, ArChoiceOptionsType, buttonModel } from "../models/gema-models";
-import { ErrorCodes } from "../util/Errors";
-import { Permissions, Permissions2 } from "./Permissions";
+import { ErrorCodes } from "../lib/Errors";
+import { Permissions, Permissions2 } from "../lib/Permissions";
 import ExtendedMessage from "../typing/ExtendedMessage";
 import { CommandPerms } from "../typing/Command";
-import { getFonts } from "./getFonts";
+import { applyUnicodeFont, FontKey, getRandomFontKey } from "./fonts";
+import fontsData from '../lib/fonts.json';
 import { UserCurrency, model as usermodel } from "../models/user-currency";
 import ExtendedInteraction from "../typing/ExtendedInteraction";
 
@@ -334,8 +335,7 @@ export default class Functions {
                             if (ind && (ind < 1 || isNaN(ind))) {
                                 throw new Error(ErrorCodes.INVALID_CHOICES)
                             }
-                            const choicesArr = ind ? choicedata[1].trim().split('|')?.map((c, i) => ({ ind: i, option: c.trim() }))
-                                : choicedata[0].trim().split('|')?.map((c, i) => ({ ind: i, option: c.trim() }))
+                            const choicesArr = choicedata[1]?.trim().split('|')?.map((c, i) => ({ ind: i, option: c.trim() }))
                             if (choicesArr && choicesArr.length >= 2) {
                                 arReply.choices.push({ ind: ind, options: choicesArr })
                             } else {
@@ -384,8 +384,7 @@ export default class Functions {
                         if (ind && ind < 1) {
                             throw new Error(ErrorCodes.INVALID_CHOICEVALUES)
                         }
-                        const options = ind ? valuedata[1].trim().split('|')?.map((c, i) => ({ ind: i, option: c.trim() }))
-                            : valuedata[0].trim().split('|')?.map((c, i) => ({ ind: i, option: c.trim() }))
+                        const options = valuedata[1]?.trim().split('|')?.map((c, i) => ({ ind: i, option: c.trim() }))
                         if (options && options.length >= 2) {
                             arReply.choicevalues.push({ ind: ind, options: options })
                         } else {
@@ -846,9 +845,8 @@ export default class Functions {
 
             if (arReply.font) {
                 const font = replaceKey(arReply.font)
-                let fonts = getFonts(botresponse)
-                let stilizedText = font === 'random' ? fonts[Math.floor(Math.random() * fonts.length)].value : fonts.find(f => f.name === font)?.value
-                if (stilizedText) botresponse = stilizedText
+                const fontKey = font === 'random' ? getRandomFontKey() : (font in fontsData ? font as FontKey : undefined)
+                if (fontKey) botresponse = applyUnicodeFont(botresponse, fontKey)
             }
             if (arReply.modifybal && arReply.modifybal.length >= 1) {
                 for (let bal of arReply.modifybal) {
@@ -889,25 +887,25 @@ export default class Functions {
                 }
             }
             if (autoresponder.matchmode === 'exactmatch') {
-                if (content.toLowerCase() === arTrigger.triggerkey) {
+                if (content.toLowerCase() === arTrigger.triggerkey.toLowerCase()) {
                     m = await enviarMensaje(arReply.replytype, wheretosend)
                     if (reactionemojis1 || reactionemojis2) await reactMessage(message, m, reactionemojis1, reactionemojis2)
                 }
             } else {
                 if (autoresponder.matchmode === 'startswith') {
-                    if (content.toLowerCase().startsWith(arTrigger.triggerkey)) {
+                    if (content.toLowerCase().startsWith(arTrigger.triggerkey.toLowerCase())) {
                         m = await enviarMensaje(arReply.replytype, wheretosend)
                         if (reactionemojis1 || reactionemojis2) await reactMessage(message, m, reactionemojis1, reactionemojis2)
                     }
                 }
                 if (autoresponder.matchmode === 'endswith') {
-                    if (content.toLowerCase().toLowerCase().endsWith(arTrigger.triggerkey)) {
+                    if (content.toLowerCase().toLowerCase().endsWith(arTrigger.triggerkey.toLowerCase())) {
                         m = await enviarMensaje(arReply.replytype, wheretosend)
                         if (reactionemojis1 || reactionemojis2) await reactMessage(message, m, reactionemojis1, reactionemojis2)
                     }
                 }
                 if (autoresponder.matchmode === 'includes') {
-                    if (content.toLowerCase().includes(arTrigger.triggerkey)) {
+                    if (content.toLowerCase().includes(arTrigger.triggerkey.toLowerCase())) {
                         m = await enviarMensaje(arReply.replytype, wheretosend)
                         if (reactionemojis1 || reactionemojis2) await reactMessage(message, m, reactionemojis1, reactionemojis2)
                     }
@@ -1118,9 +1116,8 @@ export default class Functions {
 
         if (arReply.font) {
             const font = replaceKey(arReply.font)
-            let fonts = getFonts(botresponse)
-            let stilizedText = font === 'random' ? fonts[Math.floor(Math.random() * fonts.length)].value : fonts.find(f => f.name === font)?.value
-            if (stilizedText) botresponse = stilizedText
+            const fontKey = font === 'random' ? getRandomFontKey() : (font in fontsData ? font as FontKey : undefined)
+            if (fontKey) botresponse = applyUnicodeFont(botresponse, fontKey)
         }
         if (arReply.modifybal && arReply.modifybal.length >= 1) {
             for (let bal of arReply.modifybal) {

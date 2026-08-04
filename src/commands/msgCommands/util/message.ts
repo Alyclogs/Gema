@@ -9,7 +9,7 @@ import {
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';
 import { createEmbedPagination } from '../../../util/Pagination';
-import { Permissions } from '../../../util/Permissions';
+import { Permissions } from '../../../lib/Permissions';
 
 const splitValues = (args: string[], start: number) =>
   args
@@ -219,8 +219,7 @@ export default new Command({
       ];
       if (missingComponents.length) {
         return message.reply(
-          `${
-            emojis.error
+          `${emojis.error
           } No se puede mostrar el mensaje porque ya no existe: ${missingComponents.join(
             ', '
           )}. Edita el contenido o vuelve a crear y adjuntar el componente.`
@@ -359,10 +358,9 @@ export default new Command({
         });
         client.messages = await messageModel.find({}).exec();
         await message.reply(
-          `${emojis.check} ${
-            attachType === 'button'
-              ? 'Botón añadido'
-              : 'Menú de selección añadido'
+          `${emojis.check} ${attachType === 'button'
+            ? 'Botón añadido'
+            : 'Menú de selección añadido'
           }, enviando previsualización...`
         );
         return client.functions.executeReply(

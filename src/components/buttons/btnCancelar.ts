@@ -1,6 +1,6 @@
 import { ButtonStyle } from "discord.js";
 import { GButton } from "../../models/gema-models";
-import emojis from '../../util/emojis.json';
+import emojis from '../../lib/emojis.json';
 
 const btnCancelar = new GButton();
 btnCancelar.customId = 'btnCancelar';

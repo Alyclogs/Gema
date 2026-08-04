@@ -12,7 +12,7 @@ import {
   selectmenuModel
 } from '../../../models/gema-models';
 import { createEmbedPagination } from '../../../util/Pagination';
-import { Permissions } from '../../../util/Permissions';
+import { Permissions } from '../../../lib/Permissions';
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';
 
@@ -48,12 +48,12 @@ function buildMenu(selectmenu: GSelectMenu) {
     options.length
       ? options
       : [
-          {
-            label: 'Opción de ejemplo',
-            value: 'ejemplo',
-            description: 'Añade opciones para activar este menú'
-          }
-        ]
+        {
+          label: 'Opción de ejemplo',
+          value: 'ejemplo',
+          description: 'Añade opciones para activar este menú'
+        }
+      ]
   );
   return builder;
 }
@@ -255,24 +255,20 @@ export default new Command({
       const options = menuFound.data.options ?? [];
       const optionList = options.length
         ? options
-            .map(
-              (option) =>
-                `**${option.index ?? '-'} · ${option.label}** — \`${
-                  option.value
-                }\`${option.description ? `\n${option.description}` : ''}`
-            )
-            .join('\n')
+          .map(
+            (option) =>
+              `**${option.index ?? '-'} · ${option.label}** — \`${option.value
+              }\`${option.description ? `\n${option.description}` : ''}`
+          )
+          .join('\n')
         : 'Ninguna';
       const embed = new EmbedBuilder()
         .setColor(color)
         .setTitle(`Información del menú ${menuName}`)
         .setDescription(
-          `**ID:** ${menuFound.customId}\n**Opciones:** ${
-            options.length
-          }\n**Mínimo:** ${menuFound.data.minValues ?? 1}\n**Máximo:** ${
-            menuFound.data.maxValues ?? 1
-          }\n**Placeholder:** ${
-            menuFound.data.placeholder || 'Ninguno'
+          `**ID:** ${menuFound.customId}\n**Opciones:** ${options.length
+          }\n**Mínimo:** ${menuFound.data.minValues ?? 1}\n**Máximo:** ${menuFound.data.maxValues ?? 1
+          }\n**Placeholder:** ${menuFound.data.placeholder || 'Ninguno'
           }\n**Ephemeral:** ${menuFound.ephemeral ? 'Sí' : 'No'}`
         )
         .addFields({ name: 'Opciones', value: optionList.slice(0, 1024) });
@@ -305,8 +301,7 @@ export default new Command({
       });
       client.selectmenus = await selectmenuModel.find({}).exec();
       return message.reply(
-        `${emojis.check} Respuesta general actualizada${
-          ephemeral ? ' como efímera' : ''
+        `${emojis.check} Respuesta general actualizada${ephemeral ? ' como efímera' : ''
         }`
       );
     }
@@ -364,10 +359,10 @@ export default new Command({
         content: `${emojis.check} Datos del menú actualizados`,
         components: updated
           ? [
-              new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-                buildMenu(updated)
-              )
-            ]
+            new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+              buildMenu(updated)
+            )
+          ]
           : []
       });
     }

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, ColorResolvable } from 'discord.js';
 import { embedModel, EmbedDataType } from '../../../models/gema-models';
 import { createEmbedPagination } from '../../../util/Pagination';
-import { Permissions } from '../../../util/Permissions';
+import { Permissions } from '../../../lib/Permissions';
 import { SlashCommand } from '../../../structures/Command';
 
 export default new SlashCommand({

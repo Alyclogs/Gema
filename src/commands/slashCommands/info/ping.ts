@@ -1,6 +1,6 @@
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../structures/Command';
-import { Permissions } from '../../../util/Permissions'
+import { Permissions } from '../../../lib/Permissions'
 
 export default new SlashCommand({
   data: new SlashCommandBuilder()

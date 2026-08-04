@@ -1,5 +1,5 @@
 import { Command } from "../../../structures/Command";
-import { Permissions } from "../../../util/Permissions";
+import { Permissions } from "../../../lib/Permissions";
 import { ColorResolvable, EmbedBuilder } from "discord.js";
 import { model as serverconfig } from "../../../models/serverconfig-model";
 

@@ -1,6 +1,6 @@
 import { ButtonBuilder, ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder } from 'discord.js';
 import { SlashCommand } from '../../../structures/Command';
-import { Permissions } from '../../../util/Permissions'
+import { Permissions } from '../../../lib/Permissions'
 import { GMessage, messageModel, buttonModel, selectmenuModel } from '../../../models/gema-models'
 import { createEmbedPagination } from '../../../util/Pagination'
 import { bot } from '../../..';

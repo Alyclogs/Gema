@@ -1,10 +1,11 @@
 import { EmbedBuilder } from 'discord.js'
 import { embedModel, autoresponderModel, Autoresponder, ArReplyType, ArTriggerType } from '../../../models/gema-models'
-import { Permissions } from '../../../util/Permissions'
-import { ErrorCodes } from '../../../util/Errors'
+import { Permissions } from '../../../lib/Permissions'
+import { ErrorCodes } from '../../../lib/Errors'
 import { createEmbedPagination } from '../../../util/Pagination'
 import { Command } from '../../../structures/Command'
 import ExtendedMessage from '../../../typing/ExtendedMessage'
+import emojis from '../../../lib/emojis.json'
 
 export default new Command({
     name: 'autoresponder',
@@ -23,41 +24,66 @@ export default new Command({
             uso: '`gema ar add <matchmode> <trigger> | <reply>`',
             options: [
                 {
-                    name: '--1',
-                    description: 'Crea un nuevo autoresponder con modo de coincidencia del trigger exacto'
-                        + '\nEs decir, el bot responderá cada vez que un usuario escriba un mensaje exactamente igual al trigger',
-                    uso: '`gema ar add --1 <trigger> | <reply>`',
+                    name: 'matchmode',
+                    description: 'El nuevo modo de coincidencia del autoresponder',
+                    uso: [
+                        { name: "--1", value: "exactmatch" },
+                        { name: "--2", value: "startswith" },
+                        { name: "--3", value: "endswith" },
+                        { name: "--4", value: "includes" }
+                    ].map(m => `${emojis.dot} \`${m.name}\` ${m.value}`).join('\n')
                 },
                 {
-                    name: '--2',
-                    description: 'Crea un nuevo autoresponder con modo de coincidencia del trigger al principio'
-                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger al principio de su mensaje',
-                    uso: '`gema ar add --2 <trigger> | <reply>`',
+                    name: 'trigger',
+                    description: 'El trigger del autoresponder que deseas editar'
                 },
                 {
-                    name: '--3',
-                    description: 'Crea un nuevo autoresponder con modo de coincidencia del trigger al final.'
-                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger al final de su mensaje',
-                    uso: '`gema ar add --3 <trigger> | <reply>`',
-                },
-                {
-                    name: '--4',
-                    description: 'Crea un nuevo autoresponder con modo de coincidencia que incluya al trigger'
-                        + '\nEs decir, el bot responderá cada vez que un usuario escriba el trigger en cualquier parte de su mensaje',
-                    uso: '`gema ar add --4 <trigger> | <reply>`',
+                    name: 'reply',
+                    description: 'La nueva respuesta del autoresponder, puedes usar las variables de autoresponder para la respuesta: </variables:1525195369791623188>',
                 }
             ]
         },
         {
-            name: 'edit_reply',
+            name: 'edit',
             description: 'Edita la respuesta de un autoresponder',
-            uso: '`gema ar edit_reply <trigger> | <reply>`'
-        },
-        {
-            name: 'edit_matchmode',
-            description: 'Edita el modo de coincidencia de un autoresponder',
-            uso: '`gema ar edit-matchmode <trigger> <matchmode>\nMatchmodes disponibles: \`--1\` exacto, \`--2\` al principio, \`--3\` al final, \`--4\` incluye'
-                + '\nEjemplos: gema ar edit_matchmode !request --1 (matchmode exacto)'
+            subcomands: [
+                {
+                    name: 'reply',
+                    description: 'Edita la respuesta de un autoresponder',
+                    uso: '`gema ar edit reply <trigger> | <reply>`',
+                    options: [
+                        {
+                            name: 'trigger',
+                            description: 'El trigger del autoresponder que deseas editar'
+                        },
+                        {
+                            name: 'reply',
+                            description: 'La nueva respuesta del autoresponder, puedes usar las variables de autoresponder para la respuesta: </variables:1525195369791623188>',
+                        }
+                    ]
+                },
+                {
+                    name: 'matchmode',
+                    description: 'Edita el modo de coincidencia de un autoresponder',
+                    uso: '`gema ar edit matchmode <trigger> <matchmode>`',
+                    options: [
+                        {
+                            name: 'trigger',
+                            description: 'El trigger del autoresponder que deseas editar'
+                        },
+                        {
+                            name: 'matchmode',
+                            description: 'El nuevo modo de coincidencia del autoresponder',
+                            uso: [
+                                { name: "--1", value: "exactmatch" },
+                                { name: "--2", value: "startswith" },
+                                { name: "--3", value: "endswith" },
+                                { name: "--4", value: "includes" }
+                            ].map(m => `${emojis.dot} \`${m.name}\` ${m.value}`).join('\n')
+                        }
+                    ]
+                }
+            ]
         },
         {
             name: 'remove',
@@ -65,9 +91,9 @@ export default new Command({
             uso: '`gema ar remove <trigger>`'
         },
         {
-            name: 'show_reply',
+            name: 'showreply',
             description: 'Muestra la respuesta de un autoresponder',
-            uso: `\`gema ar show_reply <trigger>\``
+            uso: `\`gema ar showreply <trigger>\``
         },
         {
             name: 'list',
@@ -87,6 +113,7 @@ export default new Command({
         client.functions.setInput(message as ExtendedMessage)
 
         let subcommand = args[0]
+        let subsubcommand = args[1]
         let trigger: string
         let reply: string | undefined
         let matchmode: string | undefined = undefined
@@ -137,7 +164,7 @@ export default new Command({
             }
         }
 
-        let cadena = args.slice(1).join(' ')
+        let cadena = args.slice(subcommand === 'edit' ? 2 : 1).join(' ')
         const matchtype = matchmodes.find(m => m.name === cadena.match(/--\d/)?.[0])
         trigger = matchtype ? cadena.replace(matchtype.name, '').trim().split('|')?.[0].trim() : cadena.trim().split('|')?.[0]?.trim()
         if (!trigger) return message.reply(`${emojis.confused} Debes especificar el trigger del autoresponder. \n\`gema help ar\` para obtener ayuda. O utiliza </autoresponder :1104985984191451317>`)
@@ -146,7 +173,7 @@ export default new Command({
         let arf = client.autoresponders.find(autr => autr.guildId === message.guild?.id
             && autr.arTrigger?.triggerkey === trigger)
 
-        if (['remove', 'show_reply', 'remove_all'].includes(subcommand)) {
+        if (['remove', 'showreply', 'remove_all'].includes(subcommand)) {
             if (!arf) {
                 return message.reply(`${emojis['hmph']} | ${ErrorCodes.AUTORESPONDER_DOESNT_EXIST}`)
             }
@@ -155,7 +182,7 @@ export default new Command({
                 await autoresponderModel.deleteOne(ardata)
                 return message.reply(`${emojis['check']} | El autoresponder **${trigger}** fue eliminado correctamente`)
             }
-            if (subcommand === 'show_reply') {
+            if (subcommand === 'showreply') {
                 if (arf.arTrigger) {
                     return message.reply({
                         embeds: [
@@ -169,183 +196,187 @@ export default new Command({
                 }
             }
         } else {
-            if (subcommand === 'edit_matchmode') {
-                if (!arf) {
-                    return message.reply(`${emojis['hmph']} | ${ErrorCodes.AUTORESPONDER_DOESNT_EXIST}`)
-                }
-                if (!matchmode) return message.reply(`${emojis.confused} El modo de coincidencia es inválido. \n\`gema help ar edit_matchmode\` para obtener ayuda. O utiliza </autoresponder edit:1104985984191451317>`)
-
-                autoresponder = arf
-                matchmode = matchtype?.value
-            }
-            if (subcommand === 'edit_reply' || subcommand === 'add') {
-                reply = cadena.indexOf('|') !== -1 ? cadena.substring(cadena.indexOf('|') + 1).trim() : undefined
-
-                if (subcommand === 'edit_reply') {
-                    trigger = cadena.split('|')?.[0]?.trim()
-                    arf = client.autoresponders.find(autr => autr.guildId === message.guild?.id
-                        && autr.arTrigger?.triggerkey === trigger)
-
-                    if (!trigger || !reply) return message.reply(`${emojis.confused} Debes especificar el trigger y el reply para el autoresponder. \n\`gema help ar\` para obtener ayuda. O utiliza </autoresponder :1104985984191451317>`)
-                    if (!arf) return message.reply(`${emojis['hmph']} ${ErrorCodes.AUTORESPONDER_DOESNT_EXIST}`)
-                    matchmode = arf.matchmode
-                } else {
-                    trigger = matchtype ? cadena.split('|')?.[0]?.replace(matchtype?.name, '')?.trim() : cadena.split('|')?.[0]?.trim()
-                    arf = client.autoresponders.find(autr => autr.guildId === message.guild?.id
-                        && autr.arTrigger?.triggerkey === trigger)
-
-                    if (!trigger) return message.reply(`${emojis.confused} Debes especificar el trigger del autoresponder. \n\`gema help ar\` para obtener ayuda. O utiliza </autoresponder :1104985984191451317>`)
-                    if (arf) return message.reply(`${emojis['hmph']}  ${ErrorCodes.AUTORESPONDER_ALREADY_EXISTS}`)
-                    if (!reply) return message.reply(`${emojis.confused} Debes especificar una respuesta para el autoresponder. \n\`gema help ar edit_reply\` para obtener ayuda. O utiliza </autoresponder edit:1104985984191451317>`)
-                    if (!matchtype) matchmode = "exactmatch"
-                    else matchmode = matchtype?.value
-                }
-
-                try {
-                    autoresponder = (await client.functions.createAutoresponder(message, reply)).setTrigger(trigger)
-                } catch (e) {
-                    return message.reply(`${emojis.error} ${e}`)
-                }
-            }
-
-            if (autoresponder) {
-                arReply = autoresponder.arReply
-                arTrigger = autoresponder.arTrigger
-
-                arReply.replymessage = arReply.replymessage?.trim()
-                arReply.rawreply = arReply.rawreply.trim()
-                previewReply = client.functions.replaceVars(arReply.rawreply).replace(/\\n/g, '\n').trim()
-                if (!previewReply?.replace(/\s/g, '').length) previewReply = ''
-
-                if (!arReply || !arTrigger || !matchmode) return
-                const requiredusers = !arReply.requireuserid || !arReply.requireuserid?.length ? 'ninguno requerido'
-                    : arReply.requireuserid?.map(rus => `<@${rus}>`).join('\n')
-
-                const reqdenychannels = !arReply.requiredchannel
-                    && !arReply.denychannel ? 'ninguno requerido' :
-                    arReply.requiredchannel?.length ? arReply.requiredchannel?.map(function (rch, index, arr) {
-                        if (index > 0) {
-                            if (arr.length > 1)
-                                return `ó <#${rch}>`
-                        } else {
-                            return `<#${rch}>`
+            if (subcommand === 'edit' || subcommand === 'add') {
+                if (subcommand === 'edit') {
+                    if (!subsubcommand) return message.reply(`${emojis.confused} Debes especificar el subcomando del autoresponder que deseas editar. \n\`gema help ar edit\` para obtener ayuda. O utiliza </autoresponder edit:1104985984191451317>`)
+                    if (subsubcommand === 'matchmode') {
+                        if (!arf) {
+                            return message.reply(`${emojis['hmph']} | ${ErrorCodes.AUTORESPONDER_DOESNT_EXIST}`)
                         }
-                    }).join('\n') : '' + arReply.denychannel?.map(function (dch, index, arr) {
-                        if (index == 0 && arReply?.requiredchannel?.length) {
-                            return `\nNO <#${dch}>`
-                        }
-                        if (index == 0 && arReply?.requiredchannel?.length == 0) {
-                            return `NO <#${dch}>`
-                        }
-                        if (index > 0) {
-                            if (arr.length > 1)
-                                return `ó <#${dch}>`
-                        }
-                    }).join('\n') || ''
+                        if (!matchtype) return message.reply(`${emojis.confused} El modo de coincidencia es inválido. \n\`gema help ar edit matchmode\` para obtener ayuda. O utiliza </autoresponder edit:1104985984191451317>`)
 
-                const requiredperms = !arReply.requiredperm ? 'ninguno requerido' :
-                    arReply.requiredperm?.map(function (rpe, index, arr) {
-                        if (index > 0) {
-                            if (arr.length > 1)
-                                return `ó \`${rpe}\``
-                        } else {
-                            return `\`${rpe}\``
-                        }
-                    }).join('\n')
-
-                const reqdenyroles = !arReply.requiredrole && !arReply.denyrole ?
-                    'ninguno requerido' : arReply.requiredrole?.length ? arReply.requiredrole?.map(function (rrl, index, arr) {
-                        if (index > 0) {
-                            if (arr.length > 1)
-                                return `ó <@&${rrl}>`
-                        } else {
-                            return `<@&${rrl}>`
-                        }
-                    }).join('\n') : '' + arReply.denyrole?.map(function (drl, index, arr) {
-                        if (index == 0 && arReply?.requiredchannel?.length) {
-                            return `\nNO <@&${drl}>`
-                        }
-                        if (index == 0 && arReply?.requiredchannel?.length) {
-                            return `NO <@&${drl}>`
-                        }
-                        if (index > 0) {
-                            if (arr.length > 1)
-                                return `ó <@&${drl}>`
-                        }
-                    }).join('\n') || ''
-
-                const addremoveroles = `Añadir: ` + (!arReply.addrole ?
-                    `\`ninguno\`` : arReply.addrole?.length ? arReply.addrole?.map(function (rrl, index, arr) {
-                        if (index > 0) {
-                            if (arr.length > 1)
-                                if (rrl.role) return `ó <@&${rrl.role}>`
-                        } else {
-                            if (rrl.role) return `<@&${rrl.role}>`
-                        }
-                    }).join('\n') : '') + `\nRemover: ` + (!arReply.removerole ?
-                        `\`ninguno\`` : arReply.removerole?.map(function (drl, index, arr) {
-                            if (index == 0 && arReply?.addrole?.length) {
-                                if (drl.role) return `\n<@&${drl.role}>`
-                            }
-                            if (index == 0 && arReply?.addrole?.length == 0) {
-                                if (drl.role) return `<@&${drl.role}>`
-                            }
-                            if (index > 0) {
-                                if (arr.length > 1)
-                                    if (drl.role) return `ó <@&${drl.role}>`
-                            }
-                        }).join('\n'))
-
-                const reactionemojis = !arReply.reactionemojis && !arTrigger.reactionemojis ?
-                    'ninguno' : 'Trigger: ' + (arTrigger.reactionemojis?.join(', ') || `\`ninguno\``)
-                    + '\nReply:' + (arReply.denyrole?.join(', ') || `\`ninguno\``)
-
-                const ar = {
-                    guildId: message.guild?.id,
-                    arTrigger: arTrigger,
-                    arReply: arReply,
-                    matchmode: matchmode,
-                    cooldown: autoresponder.cooldown
-                }
-
-                if (arReply.rawreply === "") {
-                    return message.reply(`${emojis['hmph']}  ${ErrorCodes.EMPTY_RESPONSE_ERROR}`)
-                } else {
-                    if (subcommand === 'add') {
-                        if (arf) {
-                            return message.reply({
-                                content: `${emojis['hmph']}  ${ErrorCodes.AUTORESPONDER_ALREADY_EXISTS}`,
-                            })
-                        } else {
-                            autoresponderModel.create(ar)
-                            embed.setTitle(`${emojis['yay']}  Nuevo autoresponder`)
-                        }
+                        autoresponder = arf
+                        matchmode = matchtype.value
                     }
-                    if (subcommand === 'edit_reply') {
-                        await autoresponderModel.replaceOne(ardata, ar)
-                        embed.setTitle(`${emojis['yay']}  Autoresponder editado`)
-                    }
-
-                    embed.setDescription('A continuación, se muestran los datos del autoresponder')
-                    embed.addFields(
-                        { name: 'Trigger', value: arTrigger.triggerkey, inline: true },
-                        { name: 'Match mode', value: ar.matchmode, inline: true },
-                        { name: 'Tipo de respuesta', value: arReply.replytype, inline: true },
-                        { name: 'Requiere usuarios específicos?', value: requiredusers, inline: true },
-                        { name: 'Requiere/Niega un canal específico?', value: reqdenychannels, inline: true },
-                        { name: 'Requiere/Niega algún rol?', value: reqdenyroles, inline: true },
-                        { name: 'Requiere algún permiso?', value: requiredperms, inline: true },
-                        { name: 'Es un mensaje directo?', value: arReply.wheretosend === 'user_dm' ? 'Sí' : 'No', inline: true },
-                        { name: 'Se auto-elimina?', value: `Trigger: ${ar.arTrigger.autodelete ? 'Sí' : 'No'}` + `\nReply: ${arReply.autodelete.value ? 'Sí' : 'No'}`, inline: true },
-                        { name: '¿Reacciona con emojis?', value: reactionemojis, inline: true },
-                        { name: '¿Añade/Remueve roles?', value: addremoveroles, inline: true },
-                        { name: '¿Tiene cooldown?', value: cooldown && cooldown > 0 ? `Sí: ${ar.cooldown}s` : 'No', inline: true })
-
-                    if (previewReply) embed.addFields({ name: 'Respuesta', value: previewReply })
-                    embed.addFields({ name: 'Respuesta sin formato', value: `\`\`\`${arReply.rawreply}\`\`\`` })
-
-                    return await message.reply({ embeds: [embed] }).catch(e => console.log(e))
                 }
+                if ((subcommand === 'edit' && subsubcommand === 'reply') || subcommand === 'add') {
+                    reply = cadena.indexOf('|') !== -1 ? cadena.substring(cadena.indexOf('|') + 1).trim() : undefined
+
+                    if (subcommand === 'edit' && subsubcommand === 'reply') {
+                        trigger = cadena.split('|')?.[0]?.trim()
+                        arf = client.autoresponders.find(autr => autr.guildId === message.guild?.id
+                            && autr.arTrigger?.triggerkey === trigger)
+
+                        if (!trigger || !reply) return message.reply(`${emojis.confused} Debes especificar el trigger y el reply para el autoresponder. \n\`gema help ar\` para obtener ayuda. O utiliza </autoresponder :1104985984191451317>`)
+                        if (!arf) return message.reply(`${emojis['hmph']} ${ErrorCodes.AUTORESPONDER_DOESNT_EXIST}`)
+                        matchmode = arf.matchmode
+                    } else {
+                        trigger = matchtype ? cadena.split('|')?.[0]?.replace(matchtype?.name, '')?.trim() : cadena.split('|')?.[0]?.trim()
+                        arf = client.autoresponders.find(autr => autr.guildId === message.guild?.id
+                            && autr.arTrigger?.triggerkey === trigger)
+
+                        if (!trigger) return message.reply(`${emojis.confused} Debes especificar el trigger del autoresponder. \n\`gema help ar\` para obtener ayuda. O utiliza </autoresponder :1104985984191451317>`)
+                        if (arf) return message.reply(`${emojis['hmph']}  ${ErrorCodes.AUTORESPONDER_ALREADY_EXISTS}`)
+                        if (!reply) return message.reply(`${emojis.confused} Debes especificar una respuesta para el autoresponder. \n\`gema help ar editreply\` para obtener ayuda. O utiliza </autoresponder edit:1104985984191451317>`)
+                        if (!matchtype) matchmode = "exactmatch"
+                        else matchmode = matchtype?.value
+                    }
+                    try {
+                        autoresponder = (await client.functions.createAutoresponder(message, reply)).setTrigger(trigger)
+                    } catch (e) {
+                        return message.reply(`${emojis.error} ${e}`)
+                    }
+                }
+            }
+        }
+
+        if (autoresponder) {
+            arReply = autoresponder.arReply
+            arTrigger = autoresponder.arTrigger
+
+            arReply.replymessage = arReply.replymessage?.trim()
+            arReply.rawreply = arReply.rawreply.trim()
+            previewReply = client.functions.replaceVars(arReply.rawreply).replace(/\\n/g, '\n').trim()
+            if (!previewReply?.replace(/\s/g, '').length) previewReply = ''
+
+            if (!arReply || !arTrigger || !matchmode) return
+            const requiredusers = !arReply.requireuserid || !arReply.requireuserid?.length ? 'ninguno requerido'
+                : arReply.requireuserid?.map(rus => `<@${rus}>`).join('\n')
+
+            const reqdenychannels = !arReply.requiredchannel
+                && !arReply.denychannel ? 'ninguno requerido' :
+                arReply.requiredchannel?.length ? arReply.requiredchannel?.map(function (rch, index, arr) {
+                    if (index > 0) {
+                        if (arr.length > 1)
+                            return `ó <#${rch}>`
+                    } else {
+                        return `<#${rch}>`
+                    }
+                }).join('\n') : '' + arReply.denychannel?.map(function (dch, index, arr) {
+                    if (index == 0 && arReply?.requiredchannel?.length) {
+                        return `\nNO <#${dch}>`
+                    }
+                    if (index == 0 && arReply?.requiredchannel?.length == 0) {
+                        return `NO <#${dch}>`
+                    }
+                    if (index > 0) {
+                        if (arr.length > 1)
+                            return `ó <#${dch}>`
+                    }
+                }).join('\n') || ''
+
+            const requiredperms = !arReply.requiredperm ? 'ninguno requerido' :
+                arReply.requiredperm?.map(function (rpe, index, arr) {
+                    if (index > 0) {
+                        if (arr.length > 1)
+                            return `ó \`${rpe}\``
+                    } else {
+                        return `\`${rpe}\``
+                    }
+                }).join('\n')
+
+            const reqdenyroles = !arReply.requiredrole && !arReply.denyrole ?
+                'ninguno requerido' : arReply.requiredrole?.length ? arReply.requiredrole?.map(function (rrl, index, arr) {
+                    if (index > 0) {
+                        if (arr.length > 1)
+                            return `ó <@&${rrl}>`
+                    } else {
+                        return `<@&${rrl}>`
+                    }
+                }).join('\n') : '' + arReply.denyrole?.map(function (drl, index, arr) {
+                    if (index == 0 && arReply?.requiredchannel?.length) {
+                        return `\nNO <@&${drl}>`
+                    }
+                    if (index == 0 && arReply?.requiredchannel?.length) {
+                        return `NO <@&${drl}>`
+                    }
+                    if (index > 0) {
+                        if (arr.length > 1)
+                            return `ó <@&${drl}>`
+                    }
+                }).join('\n') || ''
+
+            const addremoveroles = `Añadir: ` + (!arReply.addrole ?
+                `\`ninguno\`` : arReply.addrole?.length ? arReply.addrole?.map(function (rrl, index, arr) {
+                    if (index > 0) {
+                        if (arr.length > 1)
+                            if (rrl.role) return `ó <@&${rrl.role}>`
+                    } else {
+                        if (rrl.role) return `<@&${rrl.role}>`
+                    }
+                }).join('\n') : '') + `\nRemover: ` + (!arReply.removerole ?
+                    `\`ninguno\`` : arReply.removerole?.map(function (drl, index, arr) {
+                        if (index == 0 && arReply?.addrole?.length) {
+                            if (drl.role) return `\n<@&${drl.role}>`
+                        }
+                        if (index == 0 && arReply?.addrole?.length == 0) {
+                            if (drl.role) return `<@&${drl.role}>`
+                        }
+                        if (index > 0) {
+                            if (arr.length > 1)
+                                if (drl.role) return `ó <@&${drl.role}>`
+                        }
+                    }).join('\n'))
+
+            const reactionemojis = !arReply.reactionemojis && !arTrigger.reactionemojis ?
+                'ninguno' : 'Trigger: ' + (arTrigger.reactionemojis?.join(', ') || `\`ninguno\``)
+                + '\nReply:' + (arReply.denyrole?.join(', ') || `\`ninguno\``)
+
+            const ar = {
+                guildId: message.guild?.id,
+                arTrigger: arTrigger,
+                arReply: arReply,
+                matchmode: matchmode,
+                cooldown: autoresponder.cooldown
+            }
+
+            if (arReply.rawreply === "") {
+                return message.reply(`${emojis['hmph']}  ${ErrorCodes.EMPTY_RESPONSE_ERROR}`)
+            } else {
+                if (subcommand === 'add') {
+                    if (arf) {
+                        return message.reply({
+                            content: `${emojis['hmph']}  ${ErrorCodes.AUTORESPONDER_ALREADY_EXISTS}`,
+                        })
+                    } else {
+                        autoresponderModel.create(ar)
+                        embed.setTitle(`${emojis['yay']}  Nuevo autoresponder`)
+                    }
+                }
+                if (subcommand === 'edit') {
+                    await autoresponderModel.replaceOne(ardata, ar)
+                    embed.setTitle(`${emojis['yay']}  Autoresponder editado`)
+                }
+
+                embed.setDescription('A continuación, se muestran los datos del autoresponder')
+                embed.addFields(
+                    { name: 'Trigger', value: arTrigger.triggerkey, inline: true },
+                    { name: 'Match mode', value: ar.matchmode, inline: true },
+                    { name: 'Tipo de respuesta', value: arReply.replytype, inline: true },
+                    { name: 'Requiere usuarios específicos?', value: requiredusers, inline: true },
+                    { name: 'Requiere/Niega un canal específico?', value: reqdenychannels, inline: true },
+                    { name: 'Requiere/Niega algún rol?', value: reqdenyroles, inline: true },
+                    { name: 'Requiere algún permiso?', value: requiredperms, inline: true },
+                    { name: 'Es un mensaje directo?', value: arReply.wheretosend === 'user_dm' ? 'Sí' : 'No', inline: true },
+                    { name: 'Se auto-elimina?', value: `Trigger: ${ar.arTrigger.autodelete ? 'Sí' : 'No'}` + `\nReply: ${arReply.autodelete.value ? 'Sí' : 'No'}`, inline: true },
+                    { name: '¿Reacciona con emojis?', value: reactionemojis, inline: true },
+                    { name: '¿Añade/Remueve roles?', value: addremoveroles, inline: true },
+                    { name: '¿Tiene cooldown?', value: cooldown && cooldown > 0 ? `Sí: ${ar.cooldown}s` : 'No', inline: true })
+
+                if (previewReply) embed.addFields({ name: 'Respuesta', value: previewReply })
+                embed.addFields({ name: 'Respuesta sin formato', value: `\`\`\`${arReply.rawreply}\`\`\`` })
+
+                return await message.reply({ embeds: [embed] }).catch(e => console.log(e))
             }
         }
     }

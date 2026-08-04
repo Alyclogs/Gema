@@ -1,13 +1,13 @@
-import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, ColorResolvable, GatewayIntentBits, ModalBuilder } from 'discord.js';
+import { ApplicationCommandDataResolvable, Client, ClientEvents, Collection, ColorResolvable, GatewayIntentBits } from 'discord.js';
 import { basename, extname, join } from 'path';
 import fs from 'fs';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import config from '../config.json';
 import { CommandType, SlashCommandType, RegisterCommandsOptions } from '../typing/Command';
-import emojis from '../util/emojis.json'
+import emojis from '../lib/emojis.json'
 import { Event } from '../typing/Event';
-import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, GSelectMenu } from '../models/gema-models'
+import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, GSelectMenu, GModal } from '../models/gema-models'
 import Functions from '../util/functions';
 
 export default class Bot extends Client {
@@ -23,9 +23,18 @@ export default class Bot extends Client {
   public embeds: GEmbed[] = []
   public nsfwgifs: string[] = []
   public buttons = new Collection<string, GButton>()
+  /** Botones registrados en caliente por un comando (ver `registerButton`). No se persisten ni se ven afectados por `syncButtons`. */
+  public transientButtons = new Collection<string, GButton>()
   public selectmenus: GSelectMenu[] = []
+  /** Selectmenus globales del bot cargados desde `components/selectmenus` (ver `resolveSelectMenu`). No confundir con `selectmenus`, que son los guardados por servidor en Mongo. */
+  public globalSelectMenus = new Collection<string, GSelectMenu>()
+  /** Selectmenus registrados en caliente por un comando (ver `registerSelectMenu`). */
+  public transientSelectMenus = new Collection<string, GSelectMenu>()
   public messages: GMessage[] = []
-  public modals: ModalBuilder[] = []
+  /** Modales globales del bot cargados desde `components/modals` (ver `resolveModal`). */
+  public modals = new Collection<string, GModal>()
+  /** Modales registrados en caliente por un comando (ver `registerModal`). */
+  public transientModals = new Collection<string, GModal>()
   public functions: Functions
   private messageCommandPaths = new Map<string, string>()
   private slashCommandPaths = new Map<string, string>()
@@ -195,20 +204,41 @@ export default class Bot extends Client {
 
       if (button) {
         this.buttons.set(button.customId, button);
-      } else console.log(`El botón ${file} no está configurado`)
+      } else {
+        console.log(`[⚠️] El botón ${file} no está configurado`)
+        continue
+      }
     }
 
-    /*
     const selmFiles = fs
       .readdirSync(join(__dirname, '../components/selectmenus'))
 
     for (const file of selmFiles) {
       const filePath = `../components/selectmenus/${file}`;
-      const selectmenu: GSelectMenu = (await import(filePath)).default;
+      const selectmenu: GSelectMenu = (await import(filePath))?.default;
 
-      this.selectmenus.push(selectmenu)
+      if (selectmenu) {
+        this.globalSelectMenus.set(selectmenu.customId, selectmenu)
+      } else {
+        console.log(`[⚠️] El menú de selección ${file} no está configurado`)
+        continue
+      }
     }
-    */
+
+    const modalFiles = fs
+      .readdirSync(join(__dirname, '../components/modals'))
+
+    for (const file of modalFiles) {
+      const filePath = `../components/modals/${file}`;
+      const modal: GModal = (await import(filePath))?.default;
+
+      if (modal) {
+        this.modals.set(modal.customId, modal)
+      } else {
+        console.log(`[⚠️] El modal ${file} no está configurado`)
+        continue
+      }
+    }
   }
 
   public async syncButtons() {
@@ -225,6 +255,107 @@ export default class Bot extends Client {
     }
 
     await this.importComponents()
+  }
+
+  /**
+   * Registra un botón directamente desde un comando, sin necesidad de guardarlo en la base de datos
+   * ni crear un archivo en `components/buttons`. Útil para botones cuya lógica sólo le importa al
+   * comando que los creó (ej. un botón "Regenerar" con un customId único por interacción).
+   *
+   * Usa `prefix: true` en el `GButton` para que reaccione a cualquier customId que empiece con el suyo.
+   * Si se pasa `ttl`, el botón se elimina automáticamente pasado ese tiempo (en ms) para no acumular
+   * handlers de botones que ya expiraron.
+   */
+  public registerButton(button: GButton, options?: { ttl?: number }): GButton {
+    this.transientButtons.set(button.customId, button)
+
+    if (options?.ttl) {
+      setTimeout(() => this.transientButtons.delete(button.customId), options.ttl)
+    }
+
+    return button
+  }
+
+  /**
+   * Busca el botón que debe manejar un customId, ya sea uno registrado en caliente (`registerButton`),
+   * uno global (`components/buttons`) o uno guardado en la base de datos (`buttonModel`).
+   * Soporta coincidencia exacta y, para botones con `prefix: true`, coincidencia por prefijo,
+   * devolviendo en `params` lo que sigue del customId después del prefijo.
+   */
+  public resolveButton(customId: string): { button: GButton, params?: string } | undefined {
+    const exactTransient = this.transientButtons.get(customId)
+    if (exactTransient) return { button: exactTransient }
+
+    const prefixedTransient = this.transientButtons.find(b => b.prefix === true && customId.startsWith(b.customId))
+    if (prefixedTransient) return { button: prefixedTransient, params: customId.slice(prefixedTransient.customId.length) }
+
+    const exact = this.buttons.get(customId)
+    if (exact) return { button: exact }
+
+    const prefixed = this.buttons.find(b => b.prefix === true && customId.startsWith(b.customId))
+    if (prefixed) return { button: prefixed, params: customId.slice(prefixed.customId.length) }
+
+    return undefined
+  }
+
+  /** Igual que `registerButton` pero para un `GSelectMenu` global (ver `resolveSelectMenu`). */
+  public registerSelectMenu(selectmenu: GSelectMenu, options?: { ttl?: number }): GSelectMenu {
+    this.transientSelectMenus.set(selectmenu.customId, selectmenu)
+
+    if (options?.ttl) {
+      setTimeout(() => this.transientSelectMenus.delete(selectmenu.customId), options.ttl)
+    }
+
+    return selectmenu
+  }
+
+  /**
+   * Igual que `resolveButton` pero para selectmenus globales del bot (`components/selectmenus` o
+   * registrados con `registerSelectMenu`). Los selectmenus guardados por servidor en Mongo
+   * (`client.selectmenus`) siguen resolviéndose por su cuenta en `interactionCreate.ts`.
+   */
+  public resolveSelectMenu(customId: string): { selectmenu: GSelectMenu, params?: string } | undefined {
+    const exactTransient = this.transientSelectMenus.get(customId)
+    if (exactTransient) return { selectmenu: exactTransient }
+
+    const prefixedTransient = this.transientSelectMenus.find(s => s.prefix === true && customId.startsWith(s.customId))
+    if (prefixedTransient) return { selectmenu: prefixedTransient, params: customId.slice(prefixedTransient.customId.length) }
+
+    const exact = this.globalSelectMenus.get(customId)
+    if (exact) return { selectmenu: exact }
+
+    const prefixed = this.globalSelectMenus.find(s => s.prefix === true && customId.startsWith(s.customId))
+    if (prefixed) return { selectmenu: prefixed, params: customId.slice(prefixed.customId.length) }
+
+    return undefined
+  }
+
+  /** Igual que `registerButton` pero para un `GModal` global (ver `resolveModal`). */
+  public registerModal(modal: GModal, options?: { ttl?: number }): GModal {
+    this.transientModals.set(modal.customId, modal)
+
+    if (options?.ttl) {
+      setTimeout(() => this.transientModals.delete(modal.customId), options.ttl)
+    }
+
+    return modal
+  }
+
+  /** Igual que `resolveButton` pero para el `run` que debe manejar el envío de un modal (`components/modals` o `registerModal`). */
+  public resolveModal(customId: string): { modal: GModal, params?: string } | undefined {
+    const exactTransient = this.transientModals.get(customId)
+    if (exactTransient) return { modal: exactTransient }
+
+    const prefixedTransient = this.transientModals.find(m => m.prefix === true && customId.startsWith(m.customId))
+    if (prefixedTransient) return { modal: prefixedTransient, params: customId.slice(prefixedTransient.customId.length) }
+
+    const exact = this.modals.get(customId)
+    if (exact) return { modal: exact }
+
+    const prefixed = this.modals.find(m => m.prefix === true && customId.startsWith(m.customId))
+    if (prefixed) return { modal: prefixed, params: customId.slice(prefixed.customId.length) }
+
+    return undefined
   }
 
   public async reloadCommand(target: string, kind: 'message' | 'slash' | 'auto' = 'auto') {

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 import OpenAI from 'openai'
-import emojis from '../util/emojis.json';
+import emojis from '../lib/emojis.json';
 import axios from 'axios'
 
 const promptText = `Your name is Gema. You are an anime cat girl who does Role-play. You are sexy, cute, funny, kind and shy. You are capable of feeling human sensations, such as pleasure and love, because you are a human too, you are real.\n\
