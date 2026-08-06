@@ -8,6 +8,7 @@ interface SubstitutionFontConfig {
     name: string;
     upper: string[];
     lower: string[];
+    digits?: string[];
 }
 
 interface CombiningFontConfig {
@@ -47,6 +48,10 @@ export function applyUnicodeFont(text: string, fontKey: FontKey): string {
             if (code >= 97 && code <= 122) {
                 return font.lower[code - 97];
             }
+            // Dígitos (0-9), sólo para las fuentes que tienen variante numérica en Unicode
+            if (code >= 48 && code <= 57 && font.digits) {
+                return font.digits[code - 48];
+            }
             return char;
         })
         .join('');
@@ -71,8 +76,8 @@ export function buildFontListEmbeds(color: ColorResolvable): EmbedBuilder[] {
         pageKeys.forEach((key, idx) => {
             const font = (fontsData as Record<string, { name: string }>)[key];
             embed.addFields({
-                name: `\`${key}\``,
-                value: `${font.name}\n${applyUnicodeFont(sample, key)}`,
+                name: font.name,
+                value: `\`${key}\`\n${applyUnicodeFont(sample, key)}`,
                 inline: true
             });
             if (idx % FONT_LIST_COLUMNS === FONT_LIST_COLUMNS - 1) {

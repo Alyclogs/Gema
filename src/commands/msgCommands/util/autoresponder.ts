@@ -5,7 +5,6 @@ import { ErrorCodes } from '../../../lib/Errors'
 import { createEmbedPagination } from '../../../util/Pagination'
 import { Command } from '../../../structures/Command'
 import ExtendedMessage from '../../../typing/ExtendedMessage'
-import emojis from '../../../lib/emojis.json'
 
 export default new Command({
     name: 'autoresponder',
@@ -21,73 +20,28 @@ export default new Command({
                 + '\nPuedes hacer uso de las variables de autoresponder para la respuesta: </variables:>'
                 + '\nMatchmodes disponibles: \`--1\` exacto, \`--2\` al principio, \`--3\` al final, \`--4\` incluye'
                 + '\nSi no se especifica el matchmode, se creará un autoresponder con modo de coincidencia exacto',
-            uso: '`gema ar add <matchmode> <trigger> | <reply>`',
-            options: [
-                {
-                    name: 'matchmode',
-                    description: 'El nuevo modo de coincidencia del autoresponder',
-                    uso: [
-                        { name: "--1", value: "exactmatch" },
-                        { name: "--2", value: "startswith" },
-                        { name: "--3", value: "endswith" },
-                        { name: "--4", value: "includes" }
-                    ].map(m => `${emojis.dot} \`${m.name}\` ${m.value}`).join('\n')
-                },
-                {
-                    name: 'trigger',
-                    description: 'El trigger del autoresponder que deseas editar'
-                },
-                {
-                    name: 'reply',
-                    description: 'La nueva respuesta del autoresponder, puedes usar las variables de autoresponder para la respuesta: </variables:1525195369791623188>',
-                }
-            ]
+            uso: '`gema ar add <matchmode> <trigger> | <reply>`'
         },
         {
             name: 'edit',
             description: 'Edita la respuesta de un autoresponder',
-            subcomands: [
+            options: [
                 {
                     name: 'reply',
                     description: 'Edita la respuesta de un autoresponder',
-                    uso: '`gema ar edit reply <trigger> | <reply>`',
-                    options: [
-                        {
-                            name: 'trigger',
-                            description: 'El trigger del autoresponder que deseas editar'
-                        },
-                        {
-                            name: 'reply',
-                            description: 'La nueva respuesta del autoresponder, puedes usar las variables de autoresponder para la respuesta: </variables:1525195369791623188>',
-                        }
-                    ]
+                    uso: '`gema ar edit reply <trigger> | <reply>`'
                 },
                 {
                     name: 'matchmode',
-                    description: 'Edita el modo de coincidencia de un autoresponder',
-                    uso: '`gema ar edit matchmode <trigger> <matchmode>`',
-                    options: [
-                        {
-                            name: 'trigger',
-                            description: 'El trigger del autoresponder que deseas editar'
-                        },
-                        {
-                            name: 'matchmode',
-                            description: 'El nuevo modo de coincidencia del autoresponder',
-                            uso: [
-                                { name: "--1", value: "exactmatch" },
-                                { name: "--2", value: "startswith" },
-                                { name: "--3", value: "endswith" },
-                                { name: "--4", value: "includes" }
-                            ].map(m => `${emojis.dot} \`${m.name}\` ${m.value}`).join('\n')
-                        }
-                    ]
+                    description: 'Edita el modo de coincidencia de un autoresponder'
+                        + '\nMatchmodes disponibles: \`--1\` exacto, \`--2\` al principio, \`--3\` al final, \`--4\` incluye',
+                    uso: '`gema ar edit matchmode <trigger> <matchmode>`'
                 }
             ]
         },
         {
             name: 'remove',
-            description: 'Crea un nuevo autoresponder',
+            description: 'Elimina un autoresponder',
             uso: '`gema ar remove <trigger>`'
         },
         {

@@ -35,8 +35,8 @@ export default new Command({
             if (comando) {
                 if (comando.owner) return;
                 const embed = new EmbedBuilder()
-                    .setTitle(`${emojis.star} Comando ${comando.name}`)
-                    .setFooter({ text: `© alys#9411`, iconURL: client.users.cache.get(client.ownerIDS[0])?.displayAvatarURL() })
+                    .setTitle(`${emojis.star} Comando ${comando.name} ${subcomando ? subcomando.name : ''} ${opcion ? opcion.name : ''}`)
+                    .setFooter({ text: `© alyduhh`, iconURL: client.users.cache.get(client.ownerIDS[0])?.displayAvatarURL() })
                     .setColor(color)
                 if (subcomando) {
                     if (opcion) {
