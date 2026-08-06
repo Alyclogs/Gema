@@ -218,10 +218,10 @@ export default new SlashCommand({
                                     return `<@&${rrl}>`
                                 }
                             }).join('\n') : '' + arReply.denyrole?.map(function (drl, index, arr) {
-                                if (index == 0 && arReply?.requiredchannel?.length) {
+                                if (index == 0 && arReply?.denyrole?.length) {
                                     return `\nNO <@&${drl}>`
                                 }
-                                if (index == 0 && arReply?.requiredchannel?.length) {
+                                if (index == 0 && arReply?.denyrole?.length) {
                                     return `NO <@&${drl}>`
                                 }
                                 if (index > 0) {
@@ -264,7 +264,7 @@ export default new SlashCommand({
                             cooldown: cooldown
                         }
 
-                        if (arReply.rawreply === "") {
+                        if (arReply.rawreply === "" && !arReply.embeddata) {
                             return interaction.editReply(`${emojis['hmph']}  ${ErrorCodes.EMPTY_RESPONSE_ERROR}`)
                         } else {
                             if (subcommand === 'add') {

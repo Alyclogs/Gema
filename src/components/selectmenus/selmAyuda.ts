@@ -18,8 +18,14 @@ selmAyuda.run = async ({ client, interaction, emojis }) => {
         .setDescription(`Para obtener ayuda sobre un comando: \`gema help comando\``)
         .setColor(client.color)
         .addFields({
-            name: 'Comandos', value: comandos_de_categoria.length >= 1 ? `>>> *${comandos_de_categoria.filter(c => c !== 'reload.ts')
-                .map(c => `\`${c.replace(/.js/, "")}\``).join(" - ")}*`
+            name: 'Comandos', value: comandos_de_categoria.length >= 1 ? `>>> *${comandos_de_categoria
+                .map(c => {
+                    let comando = client.commands.get(c.replace(/.js/, "").replace(/.ts/, ""))
+                    if (!comando || comando?.owner) return null
+                    return `\`${comando?.name}\``
+                })
+                .filter((v): v is string => !!v)
+                .join(" - ")}*`
                 : `>>> *Todavía no hay comandos en esta categoría...*`
         })
         .setFooter({ text: `@alyduhh`, iconURL: client.users.cache.get(client.ownerIDS[0])?.displayAvatarURL() })

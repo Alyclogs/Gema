@@ -38,7 +38,7 @@ export default new SlashCommand({
             if (comando) {
                 if (comando.owner) return;
                 const embed = new EmbedBuilder()
-                    .setTitle(`${emojis.star} Comando ${comando.name}`)
+                    .setTitle(`${emojis.star} Comando ${comando.name} ${subcomando ? subcomando.name : ''} ${opcion ? opcion.name : ''}`)
                     .setFooter({ text: `© alys#9411`, iconURL: client.users.cache.get(client.ownerIDS[0])?.displayAvatarURL() })
                     .setColor(color)
                 if (subcomando) {
@@ -99,7 +99,7 @@ export default new SlashCommand({
                 .setColor(color)
                 .setTitle(emojis.star + ' Ayuda de Gema')
                 .setDescription(`Selecciona una categoría ó\n${emojis.dot}\`gema help <categoría>\` para obtener ayuda sobre una categoría\n${emojis.dot}\`gema help <comando>\` para ver la ayuda sombre un comando`)
-                .setFooter({ text: `© alys#9411`, iconURL: client.users.cache.get(client.ownerIDS[0])?.displayAvatarURL() })
+                .setFooter({ text: `© alyduhh`, iconURL: client.users.cache.get(client.ownerIDS[0])?.displayAvatarURL() })
 
             const seleccion = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(new StringSelectMenuBuilder()
                 .setCustomId(`SelecciónMenuAyuda`)

@@ -213,19 +213,10 @@ export default new Command({
                     reply = cadena.indexOf('|') !== -1 ? cadena.substring(cadena.indexOf('|') + 1).trim() : undefined
 
                     if (subcommand === 'edit' && subsubcommand === 'reply') {
-                        trigger = cadena.split('|')?.[0]?.trim()
-                        arf = client.autoresponders.find(autr => autr.guildId === message.guild?.id
-                            && autr.arTrigger?.triggerkey === trigger)
-
-                        if (!trigger || !reply) return message.reply(`${emojis.confused} Debes especificar el trigger y el reply para el autoresponder. \n\`gema help ar\` para obtener ayuda. O utiliza </autoresponder :1104985984191451317>`)
+                        if (!reply) return message.reply(`${emojis.confused} Debes especificar una respuesta para el autoresponder. \n\`gema help ar\` para obtener ayuda. O utiliza </autoresponder :1104985984191451317>`)
                         if (!arf) return message.reply(`${emojis['hmph']} ${ErrorCodes.AUTORESPONDER_DOESNT_EXIST}`)
                         matchmode = arf.matchmode
                     } else {
-                        trigger = matchtype ? cadena.split('|')?.[0]?.replace(matchtype?.name, '')?.trim() : cadena.split('|')?.[0]?.trim()
-                        arf = client.autoresponders.find(autr => autr.guildId === message.guild?.id
-                            && autr.arTrigger?.triggerkey === trigger)
-
-                        if (!trigger) return message.reply(`${emojis.confused} Debes especificar el trigger del autoresponder. \n\`gema help ar\` para obtener ayuda. O utiliza </autoresponder :1104985984191451317>`)
                         if (arf) return message.reply(`${emojis['hmph']}  ${ErrorCodes.AUTORESPONDER_ALREADY_EXISTS}`)
                         if (!reply) return message.reply(`${emojis.confused} Debes especificar una respuesta para el autoresponder. \n\`gema help ar editreply\` para obtener ayuda. O utiliza </autoresponder edit:1104985984191451317>`)
                         if (!matchtype) matchmode = "exactmatch"
@@ -294,10 +285,10 @@ export default new Command({
                         return `<@&${rrl}>`
                     }
                 }).join('\n') : '' + arReply.denyrole?.map(function (drl, index, arr) {
-                    if (index == 0 && arReply?.requiredchannel?.length) {
+                    if (index == 0 && arReply?.denyrole?.length) {
                         return `\nNO <@&${drl}>`
                     }
-                    if (index == 0 && arReply?.requiredchannel?.length) {
+                    if (index == 0 && arReply?.denyrole?.length) {
                         return `NO <@&${drl}>`
                     }
                     if (index > 0) {
@@ -340,7 +331,7 @@ export default new Command({
                 cooldown: autoresponder.cooldown
             }
 
-            if (arReply.rawreply === "") {
+            if (arReply.rawreply === "" && !arReply.embeddata) {
                 return message.reply(`${emojis['hmph']}  ${ErrorCodes.EMPTY_RESPONSE_ERROR}`)
             } else {
                 if (subcommand === 'add') {

@@ -19,16 +19,16 @@ const command: SlashCommandType = {
         const arg = interaction.options.getString('variable')
         const varsObj = getVariables(interaction as any)
 
-        // Helper to normalize lookup key
-        const normalize = (s?: string) => {
+        // Reduce a variable/function name to its bare word so lookups work with or without "{}" and ":"
+        const canonicalize = (s?: string) => {
             if (!s) return ''
-            return s.trim().replace(/^\{?/, '{').replace(/\}?$/, '}')
+            return s.trim().toLowerCase().replace(/^\{/, '').replace(/\}$/, '').replace(/:+$/, '')
         }
 
         if (arg) {
-            const lookup = arg.trim()
+            const lookup = canonicalize(arg)
             // Try match functions first (they have names like '{requireuser:}')
-            const func = utilFunctions.find((f: any) => f.name.toLowerCase() === lookup.toLowerCase() || f.name.toLowerCase() === normalize(lookup).toLowerCase())
+            const func = utilFunctions.find((f: any) => canonicalize(f.name) === lookup)
             if (func) {
                 const embed = new EmbedBuilder()
                     .setTitle(`${emojis['star']} Función: ${func.name}`)
@@ -44,8 +44,7 @@ const command: SlashCommandType = {
 
             // Search variables in all groups
             const allVars = (varsObj.server.vars as any[]).concat(varsObj.user.vars as any[])
-            const normalizedArg = normalize(lookup)
-            const v = allVars.find((vv: any) => vv.name.toLowerCase() === lookup.toLowerCase() || vv.name.toLowerCase() === normalizedArg.toLowerCase())
+            const v = allVars.find((vv: any) => canonicalize(vv.name) === lookup)
             if (v) {
                 const embed = new EmbedBuilder()
                     .setTitle(`${emojis['dot']} Variable: ${v.name}`)
