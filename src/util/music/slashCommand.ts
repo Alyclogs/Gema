@@ -1,5 +1,5 @@
 import { GuildMember, TextBasedChannel } from 'discord.js';
-import { MusicAction, executeMusicAction } from './index';
+import { MusicAction, MusicUserError, executeMusicAction } from './index';
 import { SlashCommandRunOptions } from '../../typing/Command';
 
 export function runMusicSlashCommand(action: MusicAction) {
@@ -33,8 +33,22 @@ export function runMusicSlashCommand(action: MusicAction) {
 
       await interaction.editReply(response);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await interaction.editReply(`${emojis.error} ${message}`);
+      if (error instanceof MusicUserError) {
+        await interaction.editReply(`${emojis.error} ${error.message}`);
+        return;
+      }
+
+      await client.functions.sendGemaError(error, {
+        origen: 'comando slash de música',
+        comando: action,
+        servidor: interaction.guildId,
+        canal: interaction.channelId,
+        usuario: `${interaction.user.tag} (${interaction.user.id})`,
+        consulta: args.getString('busqueda') || undefined
+      });
+      await interaction.editReply(
+        `${emojis.error} No pude completar la operación. Por favor, inténtalo más tarde.`
+      );
     }
   };
 }

@@ -84,6 +84,18 @@ export default class Bot extends Client {
     await this.player.extractors.loadMulti(DefaultExtractors)
     await this.player.extractors.register(YoutubeiExtractor, {})
 
+    this.player.on('error', (error) => {
+      void this.functions.sendGemaError(error, { origen: 'reproductor de música' })
+    })
+
+    this.player.events.on(GuildQueueEvent.Error, (queue, error) => {
+      void this.functions.sendGemaError(error, {
+        origen: 'cola de música',
+        servidor: queue.guild.id,
+        canal_voz: queue.channel?.id
+      })
+    })
+
     this.player.events.on(GuildQueueEvent.PlayerStart, (queue, track) => {
       const channel = queue.metadata?.channel
       if (channel && 'send' in channel) {
@@ -100,6 +112,13 @@ export default class Bot extends Client {
 
     this.player.events.on(GuildQueueEvent.PlayerError, (queue, error, track) => {
       console.error(`[Música] Error reproduciendo ${track.title}:`, error)
+      void this.functions.sendGemaError(error, {
+        origen: 'stream de música',
+        servidor: queue.guild.id,
+        canal_voz: queue.channel?.id,
+        cancion: `${track.title} — ${track.author}`,
+        url: track.url
+      })
       const channel = queue.metadata?.channel
       if (channel && 'send' in channel) {
         channel.send(`⚠️ No pude reproducir **${track.cleanTitle}**; intentaré con la siguiente canción.`).catch(console.error)

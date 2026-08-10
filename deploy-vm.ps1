@@ -8,6 +8,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$backupLabel = "deploy-vm-backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
 function Invoke-CheckedCommand {
     param(
@@ -23,15 +24,22 @@ function Invoke-CheckedCommand {
     }
 }
 
-Write-Host "Configurando gcloud para el proyecto $ProjectId..."
-Invoke-CheckedCommand {
-    gcloud config set project $ProjectId
-} "No se pudo seleccionar el proyecto de Google Cloud"
+$activeProject = (gcloud config get-value project 2>$null).Trim()
+if ($activeProject -ne $ProjectId) {
+    Write-Host "Configurando gcloud para el proyecto $ProjectId..."
+    Invoke-CheckedCommand {
+        gcloud config set project $ProjectId
+    } "No se pudo seleccionar el proyecto de Google Cloud"
+} else {
+    Write-Host "Proyecto activo de gcloud: $ProjectId"
+}
 
 $remoteCommand = @(
     "set -e"
     "cd '$RemoteRepo'"
+    "if git status --porcelain | grep -q .; then echo 'Guardando cambios remotos en $backupLabel'; git stash push --include-untracked -m '$backupLabel'; fi"
     "git pull --ff-only"
+    "npm ci"
     "npm run build"
     "pm2 restart '$Pm2App'"
     "pm2 ls"

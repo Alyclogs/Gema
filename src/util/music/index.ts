@@ -21,6 +21,13 @@ export type MusicAction =
   | 'loop'
   | 'volume';
 
+export class MusicUserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MusicUserError';
+  }
+}
+
 export interface MusicRequest {
   client: Bot;
   member: GuildMember;
@@ -36,7 +43,8 @@ const youtubeSearchEngine = `ext:${YoutubeiExtractor.identifier}` as const;
 
 function requireVoiceChannel(member: GuildMember): VoiceBasedChannel {
   const voiceChannel = member.voice.channel;
-  if (!voiceChannel) throw new Error('Debes entrar a un canal de voz primero.');
+  if (!voiceChannel)
+    throw new MusicUserError('Debes entrar a un canal de voz primero.');
   return voiceChannel;
 }
 
@@ -47,7 +55,7 @@ function requireSameVoiceChannel(
   const voiceChannel = requireVoiceChannel(member);
   const botChannel = member.guild.members.me?.voice.channel;
   if (botChannel && botChannel.id !== voiceChannel.id) {
-    throw new Error(
+    throw new MusicUserError(
       'Debes estar en el mismo canal de voz que yo para controlar la música.'
     );
   }
@@ -57,7 +65,7 @@ function requireSameVoiceChannel(
 function getQueue(client: Bot, member: GuildMember) {
   const queue = client.player.nodes.get(member.guild.id);
   if (!queue || !queue.currentTrack)
-    throw new Error('No hay música reproduciéndose en este servidor.');
+    throw new MusicUserError('No hay música reproduciéndose en este servidor.');
   return queue;
 }
 
@@ -74,7 +82,7 @@ export async function executeMusicAction(
   if (action === 'play') {
     const query = request.query?.trim();
     if (!query)
-      throw new Error(
+      throw new MusicUserError(
         'Escribe una canción, artista, álbum, playlist o enlace para buscar.'
       );
 
@@ -84,10 +92,14 @@ export async function executeMusicAction(
       !me ||
       !voiceChannel.permissionsFor(me)?.has(PermissionFlagsBits.Connect)
     ) {
-      throw new Error('No tengo permiso para conectarme a tu canal de voz.');
+      throw new MusicUserError(
+        'No tengo permiso para conectarme a tu canal de voz.'
+      );
     }
     if (!voiceChannel.permissionsFor(me)?.has(PermissionFlagsBits.Speak)) {
-      throw new Error('No tengo permiso para hablar en tu canal de voz.');
+      throw new MusicUserError(
+        'No tengo permiso para hablar en tu canal de voz.'
+      );
     }
 
     const isUrl = /^https?:\/\//i.test(query);
@@ -124,7 +136,7 @@ export async function executeMusicAction(
   const queue = getQueue(client, member);
   const currentTrack = queue.currentTrack;
   if (!currentTrack)
-    throw new Error('No hay música reproduciéndose en este servidor.');
+    throw new MusicUserError('No hay música reproduciéndose en este servidor.');
 
   switch (action) {
     case 'pause':
@@ -148,7 +160,7 @@ export async function executeMusicAction(
 
     case 'shuffle':
       if (!queue.tracks.size)
-        throw new Error('No hay canciones pendientes para mezclar.');
+        throw new MusicUserError('No hay canciones pendientes para mezclar.');
       queue.tracks.shuffle();
       return `🔀 Mezclé ${queue.tracks.size} canciones de la cola.`;
 
@@ -167,7 +179,9 @@ export async function executeMusicAction(
       };
       const mode = request.loop || 'off';
       if (!Object.prototype.hasOwnProperty.call(modes, mode)) {
-        throw new Error('El modo debe ser off, track, queue o autoplay.');
+        throw new MusicUserError(
+          'El modo debe ser off, track, queue o autoplay.'
+        );
       }
       queue.setRepeatMode(modes[mode]);
       return `🔁 Repetición: **${labels[mode]}**.`;
@@ -181,7 +195,9 @@ export async function executeMusicAction(
         volume < 0 ||
         volume > 100
       ) {
-        throw new Error('El volumen debe ser un número entero entre 0 y 100.');
+        throw new MusicUserError(
+          'El volumen debe ser un número entero entre 0 y 100.'
+        );
       }
       queue.node.setVolume(volume);
       return `🔊 Volumen ajustado al **${volume}%**.`;

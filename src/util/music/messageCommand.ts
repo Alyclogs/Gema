@@ -1,6 +1,6 @@
 import { GuildMember, TextBasedChannel } from 'discord.js';
 import { CommandRunOptions } from '../../typing/Command';
-import { executeMusicAction, MusicAction } from './index';
+import { executeMusicAction, MusicAction, MusicUserError } from './index';
 
 export function runMusicMessageCommand(action: MusicAction) {
   return async ({ client, message, args, emojis }: CommandRunOptions) => {
@@ -21,8 +21,22 @@ export function runMusicMessageCommand(action: MusicAction) {
 
       await message.reply(response);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      await message.reply(`${emojis.error} ${detail}`);
+      if (error instanceof MusicUserError) {
+        await message.reply(`${emojis.error} ${error.message}`);
+        return;
+      }
+
+      await client.functions.sendGemaError(error, {
+        origen: 'comando de mensaje de música',
+        comando: action,
+        servidor: message.guildId,
+        canal: message.channelId,
+        usuario: `${message.author.tag} (${message.author.id})`,
+        consulta: action === 'play' ? args.join(' ') : undefined
+      });
+      await message.reply(
+        `${emojis.error} No pude completar la operación. Por favor, inténtalo más tarde.`
+      );
     }
   };
 }

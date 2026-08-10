@@ -10,6 +10,7 @@ import { applyUnicodeFont, FontKey, getRandomFontKey } from "./presentation/font
 import fontsData from '../lib/fonts.json';
 import { UserCurrency, model as usermodel } from "../models/user-currency";
 import ExtendedInteraction from "../typing/ExtendedInteraction";
+import { ErrorContext, reportError } from "./errors/errorReporter";
 
 type InputChannel = ExtendedMessage["channel"] | ExtendedInteraction["channel"];
 type SendableChannel = Exclude<NonNullable<InputChannel>, PartialGroupDMChannel>;
@@ -1265,10 +1266,7 @@ export default class Functions {
         }
     }
 
-    public async sendGemaError(error: Error) {
-        let embedError = new EmbedBuilder()
-            .setTitle(`${this.client.emotes.error} Nuevo error!`)
-            .setDescription(`\´\´\´p${error.message}\n${error.stack || ''}\´\´\´`)
-        await this.client.channels.cache.get(this.client.config.errorChannelId)?.fetch().then((ch: any) => ch.send({ embeds: [embedError] }))
+    public async sendGemaError(error: unknown, context: ErrorContext = {}) {
+        await reportError(this.client, error, context)
     }
 }
