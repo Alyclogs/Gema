@@ -82,7 +82,11 @@ export default class Bot extends Client {
 
   private async setupMusic() {
     await this.player.extractors.loadMulti(DefaultExtractors)
-    await this.player.extractors.register(YoutubeiExtractor, {})
+    await this.player.extractors.register(YoutubeiExtractor, {
+      disablePlayer: true,
+      streamOptions: { useClient: 'ANDROID' },
+      logLevel: 'LOW'
+    })
 
     this.player.on('error', (error) => {
       void this.functions.sendGemaError(error, { origen: 'reproductor de música' })
@@ -119,6 +123,21 @@ export default class Bot extends Client {
       const channel = queue.metadata?.channel
       if (channel && 'send' in channel) {
         channel.send(`${this.emotes.error} No pude reproducir **${track.cleanTitle}**; intentaré con la siguiente canción.`).catch(console.error)
+      }
+    })
+
+    this.player.events.on(GuildQueueEvent.PlayerSkip, (queue, track, reason, description) => {
+      const error = new Error(`La pista fue omitida (${reason}): ${description}`)
+      void this.functions.sendGemaError(error, {
+        origen: 'pista omitida por el reproductor',
+        servidor: queue.guild.id,
+        canal_voz: queue.channel?.id,
+        cancion: `${track.title} — ${track.author}`,
+        url: track.url
+      })
+      const channel = queue.metadata?.channel
+      if (channel && 'send' in channel) {
+        channel.send(`${this.emotes.error} No pude iniciar **${track.cleanTitle}**. El error fue reportado.`).catch(console.error)
       }
     })
   }

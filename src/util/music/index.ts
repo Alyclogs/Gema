@@ -16,6 +16,7 @@ export type MusicAction =
   | 'resume'
   | 'skip'
   | 'stop'
+  | 'leave'
   | 'queue'
   | 'nowplaying'
   | 'shuffle'
@@ -212,6 +213,25 @@ export async function executeMusicAction(
   }
 
   requireSameVoiceChannel(client, member);
+
+  if (action === 'stop' || action === 'leave') {
+    const queue = client.player.nodes.get(member.guild.id);
+    const botVoice = member.guild.members.me?.voice;
+    if (!queue && !botVoice?.channel) {
+      throw new MusicUserError('No estoy conectado a un canal de voz.');
+    }
+
+    if (queue) queue.delete();
+    if (botVoice?.channel) botVoice.disconnect();
+
+    return {
+      content:
+        action === 'stop'
+          ? `${client.emotes.check} Detuve la reproducción, limpié la cola y salí del canal de voz.`
+          : `${client.emotes.check} Salí del canal de voz.`
+    };
+  }
+
   const queue = getQueue(client, member);
   const currentTrack = queue.currentTrack;
   if (!currentTrack)
@@ -240,12 +260,6 @@ export async function executeMusicAction(
         content: `${client.emotes.check} Salté **${currentTrack.cleanTitle}**.`
       };
     }
-
-    case 'stop':
-      queue.delete();
-      return {
-        content: `${client.emotes.check} Detuve la reproducción y limpié la cola.`
-      };
 
     case 'shuffle':
       if (!queue.tracks.size)
