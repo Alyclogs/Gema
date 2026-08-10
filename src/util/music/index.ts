@@ -1,4 +1,5 @@
 import {
+  EmbedBuilder,
   GuildMember,
   PermissionFlagsBits,
   TextBasedChannel,
@@ -39,6 +40,11 @@ export interface MusicRequest {
   loop?: 'off' | 'track' | 'queue' | 'autoplay';
 }
 
+export interface MusicResponse {
+  content?: string;
+  embeds?: EmbedBuilder[];
+}
+
 const youtubeSearchEngine = `ext:${YoutubeiExtractor.identifier}` as const;
 
 function requireVoiceChannel(member: GuildMember): VoiceBasedChannel {
@@ -74,9 +80,20 @@ function formatTrack(title: string, author: string, url?: string) {
   return `${name} — ${author}`;
 }
 
+function sourceName(source: string) {
+  const names: Record<string, string> = {
+    youtube: 'YouTube',
+    spotify: 'Spotify',
+    apple_music: 'Apple Music',
+    soundcloud: 'SoundCloud',
+    arbitrary: 'Enlace directo'
+  };
+  return names[source] || source;
+}
+
 export async function executeMusicAction(
   request: MusicRequest
-): Promise<string> {
+): Promise<MusicResponse> {
   const { client, member, user, textChannel, action } = request;
 
   if (action === 'play') {
@@ -102,34 +119,96 @@ export async function executeMusicAction(
       );
     }
 
+    const existingQueue = client.player.nodes.get(member.guild.id);
+    const hadActiveTrack = Boolean(existingQueue?.currentTrack);
+    const metadata = {
+      channel: textChannel,
+      suppressNextStart: !hadActiveTrack
+    };
+    if (existingQueue) existingQueue.setMetadata(metadata);
     const isUrl = /^https?:\/\//i.test(query);
     const result = await client.player.play(voiceChannel, query, {
       requestedBy: user,
       searchEngine: isUrl ? QueryType.AUTO : youtubeSearchEngine,
       fallbackSearchEngine: QueryType.AUTO_SEARCH,
       nodeOptions: {
-        metadata: { channel: textChannel },
+        metadata,
         bufferingTimeout: 15_000,
         leaveOnStop: true,
         leaveOnStopCooldown: 3_000,
-        leaveOnEnd: true,
-        leaveOnEndCooldown: 15_000,
+        leaveOnEnd: false,
         leaveOnEmpty: true,
         leaveOnEmptyCooldown: 300_000,
         volume: 80
       }
     });
 
-    result.queue.setMetadata({ channel: textChannel });
+    result.queue.setMetadata({
+      ...result.queue.metadata,
+      channel: textChannel
+    });
     const playlist = result.searchResult.playlist;
     if (playlist) {
-      return `✅ Añadí **${playlist.title}** a la cola (${result.searchResult.tracks.length} canciones).`;
+      const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setAuthor({
+          name: hadActiveTrack
+            ? 'Playlist añadida a la cola'
+            : 'Reproduciendo playlist'
+        })
+        .setTitle(playlist.title)
+        .setURL(playlist.url)
+        .setDescription(
+          hadActiveTrack
+            ? `${client.emotes.check} Se añadieron **${result.searchResult.tracks.length} canciones** a la cola.`
+            : `${client.emotes.star} Reproduciendo la selección solicitada.`
+        )
+        .addFields(
+          {
+            name: 'Autor',
+            value: playlist.author.name || 'Desconocido',
+            inline: true
+          },
+          { name: 'Duración', value: playlist.durationFormatted, inline: true },
+          { name: 'Fuente', value: sourceName(playlist.source), inline: true }
+        )
+        .setFooter({
+          text: `Solicitado por ${user.username}`,
+          iconURL: user.displayAvatarURL()
+        });
+      if (playlist.thumbnail) embed.setThumbnail(playlist.thumbnail);
+      return { embeds: [embed] };
     }
-    return `✅ Añadí ${formatTrack(
-      result.track.cleanTitle,
-      result.track.author,
-      result.track.url
-    )} a la cola.`;
+
+    const embed = new EmbedBuilder()
+      .setColor(client.color)
+      .setAuthor({
+        name: hadActiveTrack
+          ? 'Canción añadida a la cola'
+          : 'Reproduciendo ahora'
+      })
+      .setTitle(result.track.cleanTitle)
+      .setURL(result.track.url)
+      .setDescription(
+        hadActiveTrack
+          ? `${client.emotes.check} Posición en la cola: **${result.queue.tracks.size}**.`
+          : `${client.emotes.star} Reproduciendo la canción solicitada.`
+      )
+      .addFields(
+        {
+          name: 'Artista',
+          value: result.track.author || 'Desconocido',
+          inline: true
+        },
+        { name: 'Duración', value: result.track.duration, inline: true },
+        { name: 'Fuente', value: sourceName(result.track.source), inline: true }
+      )
+      .setFooter({
+        text: `Solicitado por ${user.username}`,
+        iconURL: user.displayAvatarURL()
+      });
+    if (result.track.thumbnail) embed.setThumbnail(result.track.thumbnail);
+    return { embeds: [embed] };
   }
 
   requireSameVoiceChannel(client, member);
@@ -140,29 +219,41 @@ export async function executeMusicAction(
 
   switch (action) {
     case 'pause':
-      if (queue.node.isPaused()) return '⏸️ La reproducción ya estaba pausada.';
+      if (queue.node.isPaused())
+        return {
+          content: `${client.emotes.warning} La reproducción ya estaba pausada.`
+        };
       queue.node.pause();
-      return '⏸️ Reproducción pausada.';
+      return { content: `${client.emotes.check} Reproducción pausada.` };
 
     case 'resume':
-      if (!queue.node.isPaused()) return '▶️ La reproducción ya estaba activa.';
+      if (!queue.node.isPaused())
+        return {
+          content: `${client.emotes.warning} La reproducción ya estaba activa.`
+        };
       queue.node.resume();
-      return '▶️ Reproducción reanudada.';
+      return { content: `${client.emotes.check} Reproducción reanudada.` };
 
     case 'skip': {
       queue.node.skip();
-      return `⏭️ Salté **${currentTrack.cleanTitle}**.`;
+      return {
+        content: `${client.emotes.check} Salté **${currentTrack.cleanTitle}**.`
+      };
     }
 
     case 'stop':
       queue.delete();
-      return '⏹️ Detuve la reproducción y limpié la cola.';
+      return {
+        content: `${client.emotes.check} Detuve la reproducción y limpié la cola.`
+      };
 
     case 'shuffle':
       if (!queue.tracks.size)
         throw new MusicUserError('No hay canciones pendientes para mezclar.');
       queue.tracks.shuffle();
-      return `🔀 Mezclé ${queue.tracks.size} canciones de la cola.`;
+      return {
+        content: `${client.emotes.check} Mezclé **${queue.tracks.size} canciones** de la cola.`
+      };
 
     case 'loop': {
       const modes = {
@@ -184,7 +275,9 @@ export async function executeMusicAction(
         );
       }
       queue.setRepeatMode(modes[mode]);
-      return `🔁 Repetición: **${labels[mode]}**.`;
+      return {
+        content: `${client.emotes.check} Repetición: **${labels[mode]}**.`
+      };
     }
 
     case 'volume': {
@@ -200,17 +293,33 @@ export async function executeMusicAction(
         );
       }
       queue.node.setVolume(volume);
-      return `🔊 Volumen ajustado al **${volume}%**.`;
+      return {
+        content: `${client.emotes.check} Volumen ajustado al **${volume}%**.`
+      };
     }
 
     case 'nowplaying': {
       const progress =
         queue.node.createProgressBar({ length: 16 }) || currentTrack.duration;
-      return `🎶 ${formatTrack(
-        currentTrack.cleanTitle,
-        currentTrack.author,
-        currentTrack.url
-      )}\n${progress}${queue.node.isPaused() ? ' · pausada' : ''}`;
+      const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setAuthor({ name: 'Reproduciendo ahora' })
+        .setTitle(currentTrack.cleanTitle)
+        .setURL(currentTrack.url)
+        .setDescription(
+          `${progress}${queue.node.isPaused() ? '\n**Estado:** Pausada' : ''}`
+        )
+        .addFields(
+          {
+            name: 'Artista',
+            value: currentTrack.author || 'Desconocido',
+            inline: true
+          },
+          { name: 'Duración', value: currentTrack.duration, inline: true },
+          { name: 'Volumen', value: `${queue.node.volume}%`, inline: true }
+        );
+      if (currentTrack.thumbnail) embed.setThumbnail(currentTrack.thumbnail);
+      return { embeds: [embed] };
     }
 
     case 'queue': {
@@ -220,17 +329,30 @@ export async function executeMusicAction(
         (track, index) => `${index + 1}. ${track.cleanTitle} — ${track.author}`
       );
       const remaining = upcoming.length - shown.length;
-      return [
-        `🎶 **Ahora:** ${currentTrack.cleanTitle} — ${currentTrack.author}`,
-        '',
-        upcoming.length
-          ? `**Siguientes (${upcoming.length}):**`
-          : '**No hay más canciones en la cola.**',
-        ...lines,
-        remaining > 0 ? `…y ${remaining} más.` : ''
-      ]
-        .filter(Boolean)
-        .join('\n');
+      const description = upcoming.length
+        ? [...lines, remaining > 0 ? `…y ${remaining} más.` : '']
+            .filter(Boolean)
+            .join('\n')
+        : 'No hay más canciones pendientes.';
+      const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setTitle('Cola de reproducción')
+        .setDescription(description)
+        .addFields({
+          name: 'Reproduciendo ahora',
+          value: formatTrack(
+            currentTrack.cleanTitle,
+            currentTrack.author,
+            currentTrack.url
+          )
+        })
+        .setFooter({
+          text: `${upcoming.length} canción${
+            upcoming.length === 1 ? '' : 'es'
+          } pendiente${upcoming.length === 1 ? '' : 's'}`
+        });
+      if (currentTrack.thumbnail) embed.setThumbnail(currentTrack.thumbnail);
+      return { embeds: [embed] };
     }
   }
 }

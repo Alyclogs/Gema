@@ -97,16 +97,13 @@ export default class Bot extends Client {
     })
 
     this.player.events.on(GuildQueueEvent.PlayerStart, (queue, track) => {
-      const channel = queue.metadata?.channel
-      if (channel && 'send' in channel) {
-        channel.send(`🎶 Reproduciendo ahora **${track.cleanTitle}** — ${track.author}`).catch(console.error)
+      if (queue.metadata?.suppressNextStart) {
+        queue.setMetadata({ ...queue.metadata, suppressNextStart: false })
+        return
       }
-    })
-
-    this.player.events.on(GuildQueueEvent.EmptyQueue, (queue) => {
       const channel = queue.metadata?.channel
       if (channel && 'send' in channel) {
-        channel.send('✅ La cola terminó.').catch(console.error)
+        channel.send(`${this.emotes.star} Reproduciendo ahora **${track.cleanTitle}** — ${track.author}`).catch(console.error)
       }
     })
 
@@ -121,7 +118,7 @@ export default class Bot extends Client {
       })
       const channel = queue.metadata?.channel
       if (channel && 'send' in channel) {
-        channel.send(`⚠️ No pude reproducir **${track.cleanTitle}**; intentaré con la siguiente canción.`).catch(console.error)
+        channel.send(`${this.emotes.error} No pude reproducir **${track.cleanTitle}**; intentaré con la siguiente canción.`).catch(console.error)
       }
     })
   }
