@@ -2,7 +2,7 @@ import { ButtonBuilder, ChatInputCommandInteraction, EmbedBuilder, SlashCommandB
 import { SlashCommand } from '../../../structures/Command';
 import { Permissions } from '../../../lib/Permissions'
 import { GMessage, messageModel, buttonModel, selectmenuModel } from '../../../models/gema-models'
-import { createEmbedPagination } from '../../../util/Pagination'
+import { createEmbedPagination } from '../../../util/interactions/pagination'
 import { bot } from '../../..';
 import ExtendedInteraction from '../../../typing/ExtendedInteraction';
 

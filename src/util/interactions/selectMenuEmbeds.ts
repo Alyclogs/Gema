@@ -1,6 +1,6 @@
 import { EmbedBuilder, Guild } from 'discord.js'
-import Bot from '../structures/Bot'
-import { GSelectMenu, GSelectMenuOption } from '../models/gema-models'
+import Bot from '../../structures/Bot'
+import { GSelectMenu, GSelectMenuOption } from '../../models/gema-models'
 
 export function buildSelectMenuInfoEmbed(client: Bot, guild: Guild | null | undefined, selectmenu: GSelectMenu, mode: 'general' | 'option', option?: GSelectMenuOption) {
     const baseEmbed = new EmbedBuilder()

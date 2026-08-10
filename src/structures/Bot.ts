@@ -9,6 +9,9 @@ import emojis from '../lib/emojis.json'
 import { Event } from '../typing/Event';
 import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, GSelectMenu, GModal } from '../models/gema-models'
 import Functions from '../util/functions';
+import { DefaultExtractors } from '@discord-player/extractor';
+import { GuildQueueEvent, Player } from 'discord-player';
+import { YoutubeiExtractor } from 'discord-player-youtubei';
 
 export default class Bot extends Client {
   public config = config
@@ -36,6 +39,7 @@ export default class Bot extends Client {
   /** Modales registrados en caliente por un comando (ver `registerModal`). */
   public transientModals = new Collection<string, GModal>()
   public functions: Functions
+  public player: Player
   private messageCommandPaths = new Map<string, string>()
   private slashCommandPaths = new Map<string, string>()
   private eventPaths = new Map<string, string>()
@@ -48,23 +52,59 @@ export default class Bot extends Client {
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.DirectMessages
       ],
       allowedMentions: { parse: ['users', 'roles'], repliedUser: false }
     })
     this.functions = new Functions(this)
+    this.player = new Player(this)
   }
 
-  public start() {
-    this.login(process.env.token);
+  public async start() {
+    await this.setupMusic()
 
     this.on('warn', (info) => console.log(info));
     this.on('error', console.error);
 
-    this.importEvents();
-    this.importCommands();
-    this.importComponents();
-    this.importSlashCommands();
+    await Promise.all([
+      this.importEvents(),
+      this.importCommands(),
+      this.importComponents(),
+      this.importSlashCommands(
+        true,
+        process.env.environment === 'prod' ? undefined : process.env.guildId
+      )
+    ])
+
+    await this.login(process.env.token);
+  }
+
+  private async setupMusic() {
+    await this.player.extractors.loadMulti(DefaultExtractors)
+    await this.player.extractors.register(YoutubeiExtractor, {})
+
+    this.player.events.on(GuildQueueEvent.PlayerStart, (queue, track) => {
+      const channel = queue.metadata?.channel
+      if (channel && 'send' in channel) {
+        channel.send(`🎶 Reproduciendo ahora **${track.cleanTitle}** — ${track.author}`).catch(console.error)
+      }
+    })
+
+    this.player.events.on(GuildQueueEvent.EmptyQueue, (queue) => {
+      const channel = queue.metadata?.channel
+      if (channel && 'send' in channel) {
+        channel.send('✅ La cola terminó.').catch(console.error)
+      }
+    })
+
+    this.player.events.on(GuildQueueEvent.PlayerError, (queue, error, track) => {
+      console.error(`[Música] Error reproduciendo ${track.title}:`, error)
+      const channel = queue.metadata?.channel
+      if (channel && 'send' in channel) {
+        channel.send(`⚠️ No pude reproducir **${track.cleanTitle}**; intentaré con la siguiente canción.`).catch(console.error)
+      }
+    })
   }
 
   private async importEvents() {
@@ -172,8 +212,7 @@ export default class Bot extends Client {
 
     if (targetGuildId) {
       console.log(`[📝] Registrando comandos slash en el servidor: ${targetGuildId}`)
-      rest
-        .put(
+      await rest.put(
           Routes.applicationGuildCommands(config.clientID, targetGuildId),
           { body: commands }
         )
@@ -182,8 +221,7 @@ export default class Bot extends Client {
         )
         .catch(console.error);
     } else {
-      rest
-        .put(
+      await rest.put(
           Routes.applicationCommands(config.clientID),
           { body: commands }
         )

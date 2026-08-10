@@ -1,6 +1,6 @@
 import { ColorResolvable, EmbedBuilder } from 'discord.js';
-import fontsData from '../lib/fonts.json';
-import emojis from '../lib/emojis.json';
+import fontsData from '../../lib/fonts.json';
+import emojis from '../../lib/emojis.json';
 
 export type FontKey = keyof typeof fontsData;
 

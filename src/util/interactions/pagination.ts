@@ -1,7 +1,7 @@
 import { Pagination } from 'pagination.djs';
-import { color } from '../config.json';
+import { color } from '../../config.json';
 import { ColorResolvable, EmbedBuilder, Interaction, InteractionType, Message } from 'discord.js';
-import emojis from '../lib/emojis.json';
+import emojis from '../../lib/emojis.json';
 
 export function createEmbedPagination(interaction: Exclude<Interaction, {
     type: InteractionType.ApplicationCommandAutocomplete;

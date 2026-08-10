@@ -1,7 +1,7 @@
 import { StringSelectMenuInteraction } from 'discord.js'
-import Bot from '../structures/Bot'
-import { selectmenuModel } from '../models/gema-models'
-import ExtendedInteraction from '../typing/ExtendedInteraction'
+import Bot from '../../structures/Bot'
+import { selectmenuModel } from '../../models/gema-models'
+import ExtendedInteraction from '../../typing/ExtendedInteraction'
 
 /** Maneja un selectmenu creado por un servidor con `/selectmenu create` (customId `arselm#<nombre>`). */
 export async function dispatchUserSelectMenu(client: Bot, interaction: StringSelectMenuInteraction) {

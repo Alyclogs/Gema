@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js'
 import { Permissions } from '../../../lib/Permissions';
 import nsfw from '../../../lib/actions'
 import { Command } from '../../../structures/Command';
-import { fetchNsfwMedia } from '../../../util/nsfwMedia';
+import { fetchNsfwMedia } from '../../../util/moderation/nsfwMedia';
 
 export default new Command({
     name: 'fuck',
@@ -25,7 +25,7 @@ export default new Command({
             if (user.id === message.author.id)
                 return message.reply(`${emojis.hmph} No puedes hacer eso`)
 
-            const media = await fetchNsfwMedia(nsfw.fuck)
+            const media = fetchNsfwMedia(nsfw.fuck)
             if (!media) return message.reply(`${emojis.error} No pude cargar una imagen, intenta de nuevo`)
 
             let embed = new EmbedBuilder()
@@ -33,10 +33,7 @@ export default new Command({
                 .setDescription(`**${message.member?.displayName}** le da amor a **${user.displayName}** ${emojis.drool} ❤️`)
                 .setImage(media.url)
                 .setTimestamp()
-            return await message.reply({
-                embeds: [embed],
-                files: [media.attachment]
-            })
+            return await message.reply({ embeds: [embed] })
         } else {
             return message.reply(`${emojis.confused} Necesitas mencionar a alguien`)
         }

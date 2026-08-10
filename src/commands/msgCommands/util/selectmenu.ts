@@ -11,7 +11,7 @@ import {
   GSelectMenuOption,
   selectmenuModel
 } from '../../../models/gema-models';
-import { createEmbedPagination } from '../../../util/Pagination';
+import { createEmbedPagination } from '../../../util/interactions/pagination';
 import { Permissions } from '../../../lib/Permissions';
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';

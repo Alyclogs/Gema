@@ -1,5 +1,5 @@
 import { GModal, Autoresponder, selectmenuModel } from '../../models/gema-models'
-import { updateSelectMenuPreview } from '../../util/selectMenuPreview'
+import { updateSelectMenuPreview } from '../../util/interactions/selectMenuPreview'
 import ExtendedInteraction from '../../typing/ExtendedInteraction'
 
 const mdlEditSelmData = new GModal({ customId: 'mdlEditSelmData_', prefix: true })

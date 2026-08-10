@@ -2,8 +2,8 @@ import { AutocompleteInteraction, ChatInputCommandInteraction, ColorResolvable, 
 import ExtendedInteraction from '../typing/ExtendedInteraction';
 import { Event } from '../typing/Event';
 import Bot from '../structures/Bot';
-import { isNsfwChannel } from '../util/isNsfwChannel';
-import { dispatchUserSelectMenu } from '../util/userSelectMenuDispatch';
+import { isNsfwChannel } from '../util/moderation/isNsfwChannel';
+import { dispatchUserSelectMenu } from '../util/interactions/userSelectMenuDispatch';
 
 export default new Event({
   name: "interactionCreate",

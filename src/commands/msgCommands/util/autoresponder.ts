@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js'
 import { embedModel, autoresponderModel, Autoresponder, ArReplyType, ArTriggerType } from '../../../models/gema-models'
 import { Permissions } from '../../../lib/Permissions'
 import { ErrorCodes } from '../../../lib/Errors'
-import { createEmbedPagination } from '../../../util/Pagination'
+import { createEmbedPagination } from '../../../util/interactions/pagination'
 import { Command } from '../../../structures/Command'
 import ExtendedMessage from '../../../typing/ExtendedMessage'
 
@@ -17,14 +17,22 @@ export default new Command({
             name: 'add',
             description: 'Crea un nuevo autoresponder'
                 + '\n`gema help ar add <matchmode>` para obtener más ayuda'
-                + '\nPuedes hacer uso de las variables de autoresponder para la respuesta: </variables:>'
+                + '\nPuedes hacer uso de las variables de autoresponder para la respuesta: </variables:1059322453668663367>'
                 + '\nMatchmodes disponibles: \`--1\` exacto, \`--2\` al principio, \`--3\` al final, \`--4\` incluye'
                 + '\nSi no se especifica el matchmode, se creará un autoresponder con modo de coincidencia exacto',
-            uso: '`gema ar add <matchmode> <trigger> | <reply>`'
+            uso: '`gema ar add <matchmode> <trigger> | <reply>`',
+            options: [
+                { name: '--1', description: 'Crea un autoresponder con modo de coincidencia exacto', uso: '`gema ar add --1 <trigger> | <reply>`' },
+                { name: '--2', description: 'Crea un autoresponder con modo de coincidencia al principio', uso: '`gema ar add --2 <trigger> | <reply>`' },
+                { name: '--3', description: 'Crea un autoresponder con modo de coincidencia al final', uso: '`gema ar add --3 <trigger> | <reply>`' },
+                { name: '--4', description: 'Crea un autoresponder con modo de coincidencia incluye', uso: '`gema ar add --4 <trigger> | <reply>`' }
+            ]
         },
         {
             name: 'edit',
-            description: 'Edita la respuesta de un autoresponder',
+            description: 'Edita la respuesta de un autoresponder'
+                + '\nPuedes hacer uso de las variables de autoresponder para la respuesta: </variables:1059322453668663367>'
+                + '\nMatchmodes disponibles: \`--1\` exacto, \`--2\` al principio, \`--3\` al final, \`--4\` incluye',
             options: [
                 {
                     name: 'reply',

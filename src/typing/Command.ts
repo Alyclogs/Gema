@@ -36,7 +36,7 @@ export interface ModalRunOptions {
   params?: string
 }
 
-interface CommandRunOptions {
+export interface CommandRunOptions {
   client: Bot;
   message: Message;
   args: string[];

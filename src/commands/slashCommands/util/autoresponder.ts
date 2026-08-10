@@ -3,7 +3,7 @@ import { Autoresponder, autoresponderModel, embedModel } from '../../../models/g
 import { Permissions, Permissions2 } from '../../../lib/Permissions'
 import { ErrorCodes } from '../../../lib/Errors'
 import { matches } from '../../../lib/Variables.js'
-import { createEmbedPagination } from '../../../util/Pagination'
+import { createEmbedPagination } from '../../../util/interactions/pagination'
 import { SlashCommand } from '../../../structures/Command.js'
 import ExtendedInteraction from '../../../typing/ExtendedInteraction.js'
 

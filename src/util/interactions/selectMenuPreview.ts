@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ComponentEmojiResolvable, ModalSubmitInteraction, StringSelectMenuBuilder } from 'discord.js'
-import Bot from '../structures/Bot'
-import { GButton, GSelectMenu } from '../models/gema-models'
+import Bot from '../../structures/Bot'
+import { GButton, GSelectMenu } from '../../models/gema-models'
 
 export async function updateSelectMenuPreview(client: Bot, interaction: ModalSubmitInteraction, content: string, selectmenuData: GSelectMenu) {
     const previewSelectMenu = new StringSelectMenuBuilder()

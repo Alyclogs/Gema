@@ -1,6 +1,6 @@
 import { ColorResolvable, EmbedBuilder } from 'discord.js';
 import { embedModel, EmbedDataType, GEmbed } from '../../../models/gema-models';
-import { createEmbedPagination } from '../../../util/Pagination';
+import { createEmbedPagination } from '../../../util/interactions/pagination';
 import { Permissions } from '../../../lib/Permissions';
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';

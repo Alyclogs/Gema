@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js'
 import { Permissions } from '../../../lib/Permissions';
 import nsfw from '../../../lib/actions'
 import { Command } from '../../../structures/Command';
-import { fetchNsfwMedia } from '../../../util/nsfwMedia';
+import { fetchNsfwMedia } from '../../../util/moderation/nsfwMedia';
 
 export default new Command({
     name: 'suck',
@@ -27,7 +27,7 @@ export default new Command({
                 return message.reply(`${emojis.hmph} No puedes hacer eso`)
             }
 
-            const media = await fetchNsfwMedia(nsfw.suck)
+            const media = fetchNsfwMedia(nsfw.suck)
             if (!media) return message.reply(`${emojis.error} No pude cargar una imagen, intenta de nuevo`)
 
             let embed = new EmbedBuilder()
@@ -35,10 +35,7 @@ export default new Command({
                 .setDescription(`**${message.member?.displayName}** succiona el pene de **${user.displayName}** :3`)
                 .setImage(media.url)
                 .setTimestamp()
-            return await message.reply({
-                embeds: [embed],
-                files: [media.attachment]
-            })
+            return await message.reply({ embeds: [embed] })
         } else {
             return message.reply(`${emojis.confused} Necesitas mencionar a alguien`)
         }

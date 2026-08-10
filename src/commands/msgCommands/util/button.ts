@@ -10,7 +10,7 @@ import {
   GButton
 } from '../../../models/gema-models';
 import { Permissions } from '../../../lib/Permissions';
-import { createEmbedPagination } from '../../../util/Pagination';
+import { createEmbedPagination } from '../../../util/interactions/pagination';
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';
 

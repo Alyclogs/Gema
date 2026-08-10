@@ -1,6 +1,6 @@
-import emojisData from '../lib/styles.json';
+import emojisData from '../../lib/styles.json';
 import { applyUnicodeFont, FontKey } from './fonts';
-import fontsData from '../lib/fonts.json';
+import fontsData from '../../lib/fonts.json';
 
 export type StyleCategory = keyof typeof emojisData;
 

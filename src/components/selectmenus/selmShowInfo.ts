@@ -1,6 +1,6 @@
 import { StringSelectMenuInteraction } from 'discord.js'
 import { GSelectMenu, selectmenuModel } from '../../models/gema-models'
-import { buildSelectMenuInfoEmbed } from '../../util/selectMenuEmbeds'
+import { buildSelectMenuInfoEmbed } from '../../util/interactions/selectMenuEmbeds'
 
 // customId dinámico: `info_<customId del selectmenu>` (ver selectmenu.ts), resuelto por prefijo
 const selmShowInfo = new GSelectMenu()

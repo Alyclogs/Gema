@@ -3,7 +3,7 @@ import { SlashCommand } from '../../../structures/Command';
 import { Permissions } from '../../../lib/Permissions'
 import { buttonModel, GButton, Autoresponder } from '../../../models/gema-models'
 import ExtendedInteraction from '../../../typing/ExtendedInteraction';
-import { createEmbedPagination } from '../../../util/Pagination';
+import { createEmbedPagination } from '../../../util/interactions/pagination';
 
 export default new SlashCommand({
     data: new SlashCommandBuilder()
