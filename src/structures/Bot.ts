@@ -11,7 +11,7 @@ import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, GSelectMenu, GMo
 import Functions from '../util/functions';
 import { DefaultExtractors } from '@discord-player/extractor';
 import { GuildQueueEvent, Player } from 'discord-player';
-import { YoutubeiExtractor } from 'discord-player-youtubei';
+import { Log as YoutubeLog, YoutubeiExtractor } from 'discord-player-youtubei';
 
 export default class Bot extends Client {
   public config = config
@@ -81,6 +81,7 @@ export default class Bot extends Client {
   }
 
   private async setupMusic() {
+    YoutubeLog.setLevel(YoutubeLog.Level.ERROR)
     await this.player.extractors.loadMulti(DefaultExtractors)
     await this.player.extractors.register(YoutubeiExtractor, {
       disablePlayer: true,
@@ -101,8 +102,13 @@ export default class Bot extends Client {
     })
 
     this.player.events.on(GuildQueueEvent.PlayerStart, (queue, track) => {
-      if (queue.metadata?.suppressNextStart) {
-        queue.setMetadata({ ...queue.metadata, suppressNextStart: false })
+      const suppressAnnouncement = queue.metadata?.suppressNextStart === true
+      queue.setMetadata({
+        ...queue.metadata,
+        suppressNextStart: false,
+        lastStartedTrackId: track.id
+      })
+      if (suppressAnnouncement) {
         return
       }
       const channel = queue.metadata?.channel

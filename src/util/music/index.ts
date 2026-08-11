@@ -148,6 +148,46 @@ export async function executeMusicAction(
       ...result.queue.metadata,
       channel: textChannel
     });
+
+    if (!hadActiveTrack) {
+      const expectedTrackId = result.track.id;
+      const watchdog = setTimeout(() => {
+        const activeQueue = client.player.nodes.get(member.guild.id);
+        if (!activeQueue) return;
+        if (activeQueue.metadata?.lastStartedTrackId === expectedTrackId)
+          return;
+
+        const error = new Error(
+          `La pista no emitió PlayerStart después de 20 segundos: ${result.track.title}`
+        );
+        void client.functions.sendGemaError(error, {
+          origen: 'watchdog de inicio de música',
+          servidor: member.guild.id,
+          canal_voz: voiceChannel.id,
+          cancion: `${result.track.title} — ${result.track.author}`,
+          url: result.track.url,
+          reproduciendo: activeQueue.node.isPlaying(),
+          buffering: activeQueue.node.isBuffering(),
+          pausado: activeQueue.node.isPaused()
+        });
+
+        if ('send' in textChannel && typeof textChannel.send === 'function') {
+          void textChannel
+            .send(
+              `${client.emotes.error} La canción no pudo comenzar a reproducirse. El error fue reportado.`
+            )
+            .catch((notificationError) =>
+              client.functions.sendGemaError(notificationError, {
+                origen: 'aviso público del watchdog de música',
+                servidor: member.guild.id,
+                canal: textChannel.id
+              })
+            );
+        }
+      }, 20_000);
+      watchdog.unref();
+    }
+
     const playlist = result.searchResult.playlist;
     if (playlist) {
       const embed = new EmbedBuilder()
