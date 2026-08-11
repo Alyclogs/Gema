@@ -8,7 +8,7 @@ import ExtendedMessage from "../typing/ExtendedMessage";
 import { CommandPerms } from "../typing/Command";
 import { applyUnicodeFont, FontKey, getRandomFontKey } from "./decoration/fonts";
 import fontsData from '../lib/fonts.json';
-import { UserCurrency, model as usermodel } from "../models/user-currency";
+import { User, model as usermodel } from "../models/user";
 import ExtendedInteraction from "../typing/ExtendedInteraction";
 import { ErrorContext, reportError } from "./errors/errorReporter";
 
@@ -852,16 +852,16 @@ export default class Functions {
             if (arReply.modifybal && arReply.modifybal.length >= 1) {
                 for (let bal of arReply.modifybal) {
                     if (!bal.user && !bal.cant) break
-                    let user: string | UserCurrency = (replaceArgs(bal.user) as string).replace(/[\\<>@#&!]/g, "")
+                    let user: string | User = (replaceArgs(bal.user) as string).replace(/[\\<>@#&!]/g, "")
                     if (user) {
-                        user = await usermodel.findOne({ userId: user }).exec() as UserCurrency
-                    } else user = await usermodel.findOne({ userId: author.id }).exec() as UserCurrency
+                        user = await usermodel.findOne({ userId: user }).exec() as User
+                    } else user = await usermodel.findOne({ userId: author.id }).exec() as User
                     let sym = bal.cant.match(/(\+|\-)/)?.[0]
                     let cant = Number(replaceArgs(bal.cant.replace(/[\+\-]/, ""))) || 0
                     if (!sym || !cant || !user) return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.INVALID_MODIFYBALL}`)
-                    let newcant = sym === '+' ? (user.balance || 0) + cant : (user.balance || 0) - cant
+                    let newcant = sym === '+' ? (user.economy?.balance || 0) + cant : (user.economy?.balance || 0) - cant
                     if (newcant < 0) return channel.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MODIFYBAL_ERROR}`)
-                    await usermodel.updateOne({ userId: user.userId }, { balance: newcant })
+                    await usermodel.updateOne({ userId: user.userId }, { $set: { 'economy.balance': newcant } })
                 }
             }
             /*
@@ -1123,16 +1123,16 @@ export default class Functions {
         if (arReply.modifybal && arReply.modifybal.length >= 1) {
             for (let bal of arReply.modifybal) {
                 if (!bal.user && !bal.cant) break
-                let user: string | UserCurrency = (replaceKey(bal.user) as string).replace(/[\\<>@#&!]/g, "")
+                let user: string | User = (replaceKey(bal.user) as string).replace(/[\\<>@#&!]/g, "")
                 if (user) {
-                    user = await usermodel.findOne({ userId: user }).exec() as UserCurrency
-                } else user = await usermodel.findOne({ userId: message instanceof Message ? message.author.id : message.user.id }).exec() as UserCurrency
+                    user = await usermodel.findOne({ userId: user }).exec() as User
+                } else user = await usermodel.findOne({ userId: message instanceof Message ? message.author.id : message.user.id }).exec() as User
                 let sym = bal.cant.match(/(\+|\-)/)?.[0]
                 let cant = Number(replaceKey(bal.cant.replace(/[\+\-]/, ""))) || 0
                 if (!sym || !cant || !user) return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.INVALID_MODIFYBALL}`)
-                let newcant = sym === '+' ? (user.balance || 0) + cant : (user.balance || 0) - cant
+                let newcant = sym === '+' ? (user.economy?.balance || 0) + cant : (user.economy?.balance || 0) - cant
                 if (newcant < 0) return sendChannel?.send(`${this.client.emotes.error} \`ERROR\`: ${ErrorCodes.MODIFYBAL_ERROR}`)
-                await usermodel.updateOne({ userId: user.userId }, { balance: newcant })
+                await usermodel.updateOne({ userId: user.userId }, { $set: { 'economy.balance': newcant } })
             }
         }
         if (!(message instanceof ButtonInteraction && message instanceof MessageComponentInteraction) && arReply.buttons?.length) {

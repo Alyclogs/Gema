@@ -1,5 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
 import type Bot from '../../structures/Bot';
+import emojis from '../../lib/emojis.json';
 
 export type ErrorContext = Record<
   string,
@@ -54,17 +55,15 @@ export async function reportError(
       )
       .map(([key, value]) => `**${key}:** ${String(value).slice(0, 500)}`)
       .join('\n');
-    const detail = `${normalized.name}: ${normalized.message}\n${
-      normalized.stack || ''
-    }`.replace(/```/g, '`\u200b``');
+    const detail = `${normalized.name}: ${normalized.message}\n${normalized.stack || ''
+      }`.replace(/```/g, '`\u200b``');
     const chunks = splitText(detail, EMBED_DESCRIPTION_LIMIT);
 
     for (const [index, chunk] of chunks.entries()) {
       const embed = new EmbedBuilder()
         .setColor(0xed4245)
         .setTitle(
-          `Error de Gema${
-            chunks.length > 1 ? ` (${index + 1}/${chunks.length})` : ''
+          `${emojis.error} Error de Gema${chunks.length > 1 ? ` (${index + 1}/${chunks.length})` : ''
           }`
         )
         .setDescription(`\`\`\`text\n${chunk}\n\`\`\``)

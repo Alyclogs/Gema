@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js'
 import { Permissions } from '../../../lib/Permissions';
 import nsfw from '../../../lib/actions'
 import { Command } from '../../../structures/Command';
-import { fetchNsfwMedia } from '../../../util/nsfw/nsfwMedia';
+import { fetchNsfwMedia } from '../../../util/media/nsfwMedia';
 
 export default new Command({
     name: 'suck',

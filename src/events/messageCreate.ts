@@ -2,12 +2,12 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolva
 import Bot from "../structures/Bot";
 import { Event } from "../typing/Event";
 import { BoostSettings, FarewellSettings, model as serverconfig, ServerConfig, WelcomerSettings } from "../models/serverconfig-model"
-import { model as usermodel } from "../models/user-currency"
+import { ensureUser } from "../models/user"
 import config from "../config.json"
 import ExtendedMessage from "../typing/ExtendedMessage";
 import { model as chatbotModel, Chatbot } from "../models/chatbot-model";
 import { autoresponderModel, embedModel } from "../models/gema-models";
-import { isNsfwChannel } from "../util/nsfw/isNsfwChannel";
+import { isNsfwChannel } from "../util/moderation/isNsfwChannel";
 
 export default new Event({
     name: "messageCreate",
@@ -34,12 +34,8 @@ export default new Event({
                 boostSettings: new BoostSettings()
             }))
         }
-        if (!await usermodel.findOne({ userId: author.id }).exec()) {
-            if (author.id !== client?.user?.id)
-                await usermodel.create({
-                    userId: author.id,
-                    balance: 0
-                })
+        if (author.id !== client?.user?.id) {
+            await ensureUser(author.id)
         }
 
         if (content === `<@${user?.id}>`) {
