@@ -154,11 +154,16 @@ export async function executeMusicAction(
       const watchdog = setTimeout(() => {
         const activeQueue = client.player.nodes.get(member.guild.id);
         if (!activeQueue) return;
-        if (activeQueue.metadata?.lastStartedTrackId === expectedTrackId)
-          return;
+        const started =
+          activeQueue.metadata?.lastStartedTrackId === expectedTrackId;
+        const progressed = activeQueue.node.playbackTime >= 5_000;
+        const playing = activeQueue.node.isPlaying();
+        if (started && progressed && playing) return;
+
+        const botVoice = member.guild.members.me?.voice;
 
         const error = new Error(
-          `La pista no emitió PlayerStart después de 20 segundos: ${result.track.title}`
+          `La reproducción no progresó correctamente después de 20 segundos: ${result.track.title}`
         );
         void client.functions.sendGemaError(error, {
           origen: 'watchdog de inicio de música',
@@ -166,9 +171,15 @@ export async function executeMusicAction(
           canal_voz: voiceChannel.id,
           cancion: `${result.track.title} — ${result.track.author}`,
           url: result.track.url,
-          reproduciendo: activeQueue.node.isPlaying(),
+          player_start: started,
+          reproduciendo: playing,
           buffering: activeQueue.node.isBuffering(),
-          pausado: activeQueue.node.isPaused()
+          pausado: activeQueue.node.isPaused(),
+          progreso_ms: activeQueue.node.playbackTime,
+          conexion_voz: activeQueue.connection?.state.status,
+          server_mute: botVoice?.serverMute,
+          server_deaf: botVoice?.serverDeaf,
+          suppress: botVoice?.suppress
         });
 
         if ('send' in textChannel && typeof textChannel.send === 'function') {
@@ -202,7 +213,7 @@ export async function executeMusicAction(
         .setDescription(
           hadActiveTrack
             ? `${client.emotes.check} Se añadieron **${result.searchResult.tracks.length} canciones** a la cola.`
-            : `${client.emotes.star} Reproduciendo la selección solicitada.`
+            : `Reproduciendo la selección solicitada.`
         )
         .addFields(
           {

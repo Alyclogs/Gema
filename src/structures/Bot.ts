@@ -86,7 +86,15 @@ export default class Bot extends Client {
     await this.player.extractors.register(YoutubeiExtractor, {
       disablePlayer: true,
       streamOptions: { useClient: 'ANDROID' },
-      logLevel: 'LOW'
+      useYoutubeDL: true,
+      logLevel: 'ALL'
+    })
+
+    this.player.on('debug', (message) => {
+      if (!/(error|failed|unable)/i.test(message)) return
+      void this.functions.sendGemaError(new Error(message), {
+        origen: 'debug del reproductor de música'
+      })
     })
 
     this.player.on('error', (error) => {
@@ -102,6 +110,9 @@ export default class Bot extends Client {
     })
 
     this.player.events.on(GuildQueueEvent.PlayerStart, (queue, track) => {
+      console.log(
+        `[Música] PlayerStart guild=${queue.guild.id} track=${track.id} voice=${queue.connection?.state.status || 'sin conexión'}`
+      )
       const suppressAnnouncement = queue.metadata?.suppressNextStart === true
       queue.setMetadata({
         ...queue.metadata,
