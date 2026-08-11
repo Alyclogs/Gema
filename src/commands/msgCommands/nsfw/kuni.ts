@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js'
 import { Permissions } from '../../../lib/Permissions';
 import nsfw from '../../../lib/actions'
 import { Command } from '../../../structures/Command';
-import { fetchNsfwMedia } from '../../../util/moderation/nsfwMedia';
+import { fetchNsfwMedia } from '../../../util/nsfw/nsfwMedia';
 
 export default new Command({
     name: 'kuni',
@@ -25,15 +25,24 @@ export default new Command({
             if (user.id === message.author.id)
                 return message.reply(`${emojis.hmph} No puedes hacer eso`)
 
-            const media = fetchNsfwMedia(nsfw.kuni)
+            const media = await fetchNsfwMedia(nsfw.kuni)
             if (!media) return message.reply(`${emojis.error} No pude cargar una imagen, intenta de nuevo`)
+
+            const descriptions = [
+                `**${message.member?.displayName}** usa su lengua para complacer a **${user.displayName}**`,
+                `**${message.member?.displayName}** se hunde entre las piernas de **${user.displayName}**`,
+                `**${message.member?.displayName}** saborea a **${user.displayName}** con pasión`
+            ]
 
             let embed = new EmbedBuilder()
                 .setColor(color)
-                .setDescription(`**${message.member?.displayName}** lame el coño de **${user.displayName}** u///u`)
+                .setDescription(descriptions[Math.floor(Math.random() * descriptions.length)])
                 .setImage(media.url)
                 .setTimestamp()
-            return await message.reply({ embeds: [embed] })
+            return await message.reply({
+                embeds: [embed],
+                files: [media.attachment]
+            })
         } else {
             return message.reply(`${emojis.confused} Necesitas mencionar a alguien`)
         }

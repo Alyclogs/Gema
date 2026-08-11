@@ -7,7 +7,7 @@ import config from "../config.json"
 import ExtendedMessage from "../typing/ExtendedMessage";
 import { model as chatbotModel, Chatbot } from "../models/chatbot-model";
 import { autoresponderModel, embedModel } from "../models/gema-models";
-import { isNsfwChannel } from "../util/moderation/isNsfwChannel";
+import { isNsfwChannel } from "../util/nsfw/isNsfwChannel";
 
 export default new Event({
     name: "messageCreate",

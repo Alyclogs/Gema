@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js'
 import { Permissions } from '../../../lib/Permissions';
 import nsfw from '../../../lib/actions'
 import { Command } from '../../../structures/Command';
-import { fetchNsfwMedia } from '../../../util/moderation/nsfwMedia';
+import { fetchNsfwMedia } from '../../../util/nsfw/nsfwMedia';
 
 export default new Command({
     name: 'fuck',
@@ -25,15 +25,24 @@ export default new Command({
             if (user.id === message.author.id)
                 return message.reply(`${emojis.hmph} No puedes hacer eso`)
 
-            const media = fetchNsfwMedia(nsfw.fuck)
+            const media = await fetchNsfwMedia(nsfw.fuck)
             if (!media) return message.reply(`${emojis.error} No pude cargar una imagen, intenta de nuevo`)
+
+            const descriptions = [
+                `**${message.member?.displayName}** le da amor a **${user.displayName}** ${emojis.drool} ❤️`,
+                `**${message.member?.displayName}** se lo hace a **${user.displayName}** con muchas ganas ${emojis.drool}`,
+                `**${message.member?.displayName}** y **${user.displayName}** se pierden el uno en el otro ❤️`
+            ]
 
             let embed = new EmbedBuilder()
                 .setColor(color)
-                .setDescription(`**${message.member?.displayName}** le da amor a **${user.displayName}** ${emojis.drool} ❤️`)
+                .setDescription(descriptions[Math.floor(Math.random() * descriptions.length)])
                 .setImage(media.url)
                 .setTimestamp()
-            return await message.reply({ embeds: [embed] })
+            return await message.reply({
+                embeds: [embed],
+                files: [media.attachment]
+            })
         } else {
             return message.reply(`${emojis.confused} Necesitas mencionar a alguien`)
         }

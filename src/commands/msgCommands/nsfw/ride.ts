@@ -5,35 +5,33 @@ import { Command } from '../../../structures/Command';
 import { fetchNsfwMedia } from '../../../util/nsfw/nsfwMedia';
 
 export default new Command({
-    name: 'suck',
-    description: 'Comando de roleplay',
+    name: 'ride',
+    description: 'Cabalga a alguien en roleplay',
+    uso: '',
     aliases: [],
     nsfw: true,
-    uso: '',
     timeout: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 
-    async run({ client, message, args, prefix, emojis, color }) {
+    async run({ client, message, args, emojis, color }) {
         let replied;
         if (message.type === 19) replied = await message.fetchReference()
         const user = message.mentions.members?.first() || replied?.author || message.guild?.members.cache
             .find(m => m.id === args[0] || m.displayName.startsWith(args[0]) || m.user.tag.startsWith(args[0]))
         if (user) {
-            if (user.id === client.user?.id) {
+            if (user.id === client.user?.id)
                 return message.reply(`${emojis.blush} Hey! No quiero gracias ><`)
-            }
-            if (user.id === message.author.id) {
+            if (user.id === message.author.id)
                 return message.reply(`${emojis.hmph} No puedes hacer eso`)
-            }
 
-            const media = await fetchNsfwMedia(nsfw.suck)
+            const media = await fetchNsfwMedia(nsfw.ride)
             if (!media) return message.reply(`${emojis.error} No pude cargar una imagen, intenta de nuevo`)
 
             const descriptions = [
-                `**${message.member?.displayName}** succiona el miembro de **${user.displayName}**`,
-                `**${message.member?.displayName}** se mete a la boca el miembro de **${user.displayName}**`,
-                `**${message.member?.displayName}** se lo chupa a **${user.displayName}** sin parar`
+                `**${message.member?.displayName}** cabalga a **${user.displayName}**`,
+                `**${message.member?.displayName}** se sienta encima de **${user.displayName}** y empieza a moverse`,
+                `**${message.member?.displayName}** monta a **${user.displayName}** sin parar`
             ]
 
             let embed = new EmbedBuilder()

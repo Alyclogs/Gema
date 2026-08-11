@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js'
 import { Permissions } from '../../../lib/Permissions';
 import nsfw from '../../../lib/actions'
 import { Command } from '../../../structures/Command';
-import { fetchNsfwMedia } from '../../../util/moderation/nsfwMedia';
+import { fetchNsfwMedia } from '../../../util/nsfw/nsfwMedia';
 
 export default new Command({
     name: 'fap',
@@ -25,25 +25,43 @@ export default new Command({
             if (user.id === message.author.id)
                 return message.reply(`${emojis.hmph} No puedes hacer eso`)
 
-            const media = fetchNsfwMedia(nsfw.fapSomeone)
+            const media = await fetchNsfwMedia(nsfw.fapSomeone)
             if (!media) return message.reply(`${emojis.error} No pude cargar una imagen, intenta de nuevo`)
+
+            const descriptions = [
+                `**${message.member?.displayName}** masturba a **${user.displayName}**`,
+                `**${message.member?.displayName}** le echa una mano a **${user.displayName}**`,
+                `**${message.member?.displayName}** ayuda a **${user.displayName}** a relajarse un rato`
+            ]
 
             let embed = new EmbedBuilder()
                 .setColor(color)
-                .setDescription(`**${message.member?.displayName}** masturba a **${user.displayName}** ^^`)
+                .setDescription(descriptions[Math.floor(Math.random() * descriptions.length)])
                 .setImage(media.url)
                 .setTimestamp()
-            return await message.reply({ embeds: [embed] })
+            return await message.reply({
+                embeds: [embed],
+                files: [media.attachment]
+            })
         } else {
-            const media = fetchNsfwMedia(nsfw.fap)
+            const media = await fetchNsfwMedia(nsfw.fap)
             if (!media) return message.reply(`${emojis.error} No pude cargar una imagen, intenta de nuevo`)
+
+            const descriptions = [
+                `**${message.member?.displayName}** se da amor ^^`,
+                `**${message.member?.displayName}** se toma un momento para sí mismo/a >w<`,
+                `**${message.member?.displayName}** se complace a solas uwu`
+            ]
 
             let embed = new EmbedBuilder()
                 .setColor(color)
-                .setDescription(`**${message.member?.displayName}** se da amor ^^`)
+                .setDescription(descriptions[Math.floor(Math.random() * descriptions.length)])
                 .setImage(media.url)
                 .setTimestamp()
-            return await message.reply({ embeds: [embed] })
+            return await message.reply({
+                embeds: [embed],
+                files: [media.attachment]
+            })
         }
     }
 })

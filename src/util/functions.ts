@@ -6,7 +6,7 @@ import { ErrorCodes } from "../lib/Errors";
 import { Permissions, Permissions2 } from "../lib/Permissions";
 import ExtendedMessage from "../typing/ExtendedMessage";
 import { CommandPerms } from "../typing/Command";
-import { applyUnicodeFont, FontKey, getRandomFontKey } from "./presentation/fonts";
+import { applyUnicodeFont, FontKey, getRandomFontKey } from "./decoration/fonts";
 import fontsData from '../lib/fonts.json';
 import { UserCurrency, model as usermodel } from "../models/user-currency";
 import ExtendedInteraction from "../typing/ExtendedInteraction";

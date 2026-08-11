@@ -2,13 +2,13 @@ import { Command } from "../../../structures/Command";
 import { ActionRowBuilder, ButtonBuilder, ColorResolvable, EmbedBuilder, Message } from "discord.js";
 import { Permissions } from "../../../lib/Permissions";
 import { GButton } from "../../../models/gema-models";
-import { applyUnicodeFont, FontKey, getRandomFontKey } from "../../../util/presentation/fonts";
+import { applyUnicodeFont, FontKey, getRandomFontKey } from "../../../util/decoration/fonts";
 import fontsData from '../../../lib/fonts.json';
 import emojisData from '../../../lib/styles.json';
-import { createProfileBanner } from "../../../util/presentation/banner";
-import { generateColor, generateGradient, generatePalette, TONES, ToneKey } from "../../../util/presentation/colors";
-import { renderColorSwatch, renderGradient, renderPalette } from "../../../util/presentation/colorImages";
-import { generateDecoration, StyleCategory } from "../../../util/presentation/decor";
+import { createProfileBanner } from "../../../util/decoration/banner";
+import { generateColor, generateGradient, generatePalette, TONES, ToneKey } from "../../../util/decoration/colors";
+import { renderColorSwatch, renderGradient, renderPalette } from "../../../util/decoration/colorImages";
+import { generateDecoration, StyleCategory } from "../../../util/decoration/decor";
 
 const toneNames = Object.keys(TONES).join(', ');
 const fontNames = Object.keys(fontsData).join(', ');
