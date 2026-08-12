@@ -11,7 +11,7 @@ import {
   GSelectMenuOption,
   selectmenuModel
 } from '../../../models/gema-models';
-import { createEmbedPagination } from '../../../util/interactions/pagination';
+import { createEmbedPagination } from '../../../util/pagination';
 import { Permissions } from '../../../lib/Permissions';
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';
@@ -82,7 +82,7 @@ export default new Command({
   aliases: ['select', 'menu', 'menú'],
   uso: '`gema selectmenu <subcomando>`\n`gema help selectmenu <subcomando>` para obtener más ayuda',
   timeout: 0,
-  subcomands: [
+  subcommands: [
     {
       name: 'create',
       description:

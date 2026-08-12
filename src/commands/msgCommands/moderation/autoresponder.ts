@@ -2,7 +2,7 @@ import { EmbedBuilder } from 'discord.js'
 import { embedModel, autoresponderModel, Autoresponder, ArReplyType, ArTriggerType } from '../../../models/gema-models'
 import { Permissions } from '../../../lib/Permissions'
 import { ErrorCodes } from '../../../lib/Errors'
-import { createEmbedPagination } from '../../../util/interactions/pagination'
+import { createEmbedPagination } from '../../../util/pagination'
 import { Command } from '../../../structures/Command'
 import ExtendedMessage from '../../../typing/ExtendedMessage'
 
@@ -12,7 +12,7 @@ export default new Command({
     aliases: ['ar'],
     uso: '`gema ar <subcomando>` \n`gema help ar <subcomando>` para obtener más ayuda',
     timeout: 0,
-    subcomands: [
+    subcommands: [
         {
             name: 'add',
             description: 'Crea un nuevo autoresponder'

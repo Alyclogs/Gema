@@ -32,7 +32,7 @@ export default new SlashCommand({
         if (cmd) {
             const commandName = cmd.toLowerCase().split(' ')
             const comando = client.commands.get(commandName[0]) || client.commands.find(c => c.aliases && c.aliases.includes(commandName[0]));
-            const subcomando = comando?.subcomands?.find(s => s.name.toLowerCase() === commandName[1])
+            const subcomando = comando?.subcommands?.find(s => s.name.toLowerCase() === commandName[1])
             const opcion = subcomando?.options?.find(o => o.name.toLowerCase() === commandName[2])
 
             if (comando) {
@@ -77,9 +77,9 @@ export default new SlashCommand({
                 } else {
                     embed.setDescription(comando.description)
                     if (comando.aliases && comando.aliases.length >= 1) embed.addFields({ name: `Aliases`, value: `${comando.aliases.map(alias => `\`${alias}\``).join(", ")}` },);
-                    if (comando.subcomands?.length) embed.addFields({
+                    if (comando.subcommands?.length) embed.addFields({
                         name: `Subcomandos`,
-                        value: `${comando.subcomands?.map(s => `${emojis.dot} \`${comando.name + ' ' + s.name}\``).join("\n")}`
+                        value: `${comando.subcommands?.map(s => `${emojis.dot} \`${comando.name + ' ' + s.name}\``).join("\n")}`
                     });
                     if (comando.uso) embed.addFields({ name: `Uso`, value: `\`${comando.uso}\`` });
                     if (comando.timeout) embed.addFields({ name: `Cooldown`, value: formatTime(comando.timeout) });

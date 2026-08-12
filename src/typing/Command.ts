@@ -76,7 +76,7 @@ export type CommandType = {
   botperms?: CommandPerms[]
   memberperms?: CommandPerms[]
   timeout?: number
-  subcomands?: SubcommandType[]
+  subcommands?: SubcommandType[]
   run?: CommandRunFunction;
 }
 

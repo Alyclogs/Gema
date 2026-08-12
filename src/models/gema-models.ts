@@ -157,14 +157,14 @@ type ButtonData = {
 }
 
 export interface EmbedDataType {
-    author: EmbedAuthorType
-    title: string
+    author?: EmbedAuthorType
+    title?: string
     description: string
     color: ColorResolvable
-    thumbnail: string
-    image: string
-    footer: EmbedFooterType
-    timestamp: boolean
+    thumbnail?: string
+    image?: string
+    footer?: EmbedFooterType
+    timestamp?: boolean
 }
 
 type EmbedAuthorType = {

@@ -1,7 +1,7 @@
 import { Command } from '../../../structures/Command';
 import { Permissions } from '../../../lib/Permissions';
-import { buildFontListEmbeds } from '../../../util/decoration/fonts';
-import { createEmbedPagination } from '../../../util/interactions/pagination';
+import { buildFontListEmbeds } from '../../../helpers/decoration/fonts';
+import { createEmbedPagination } from '../../../util/pagination';
 
 export default new Command({
     name: 'fonts',

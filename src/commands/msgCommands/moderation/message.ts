@@ -8,7 +8,7 @@ import {
 } from '../../../models/gema-models';
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';
-import { createEmbedPagination } from '../../../util/interactions/pagination';
+import { createEmbedPagination } from '../../../util/pagination';
 import { Permissions } from '../../../lib/Permissions';
 
 const splitValues = (args: string[], start: number) =>
@@ -25,7 +25,7 @@ export default new Command({
   aliases: ['msg', 'mensaje'],
   uso: '`gema message <subcomando>`\n`gema help message <subcomando>` para obtener más ayuda',
   timeout: 0,
-  subcomands: [
+  subcommands: [
     {
       name: 'create',
       description: 'Crea un mensaje vacío que luego puedes configurar',

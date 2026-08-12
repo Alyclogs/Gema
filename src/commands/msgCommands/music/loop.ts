@@ -1,6 +1,6 @@
 import { Command } from '../../../structures/Command';
 import { Permissions } from '../../../lib/Permissions';
-import { runMusicMessageCommand } from '../../../util/music/messageCommand';
+import { runMusicMessageCommand } from '../../../helpers/music/messageCommand';
 
 export default new Command({
   name: 'loop',

@@ -113,6 +113,8 @@ export default class Bot extends Client {
       console.log(
         `[Música] PlayerStart guild=${queue.guild.id} track=${track.id} voice=${queue.connection?.state.status || 'sin conexión'}`
       )
+      // Por defecto el encoder Opus usa un bitrate bajo; 'auto' lo sube al máximo que permite el canal.
+      queue.node.setBitrate('auto')
       const suppressAnnouncement = queue.metadata?.suppressNextStart === true
       queue.setMetadata({
         ...queue.metadata,
@@ -265,18 +267,18 @@ export default class Bot extends Client {
     if (targetGuildId) {
       console.log(`[📝] Registrando comandos slash en el servidor: ${targetGuildId}`)
       await rest.put(
-          Routes.applicationGuildCommands(config.clientID, targetGuildId),
-          { body: commands }
-        )
+        Routes.applicationGuildCommands(config.clientID, targetGuildId),
+        { body: commands }
+      )
         .then(() =>
           console.log(`[✅] Comandos slash cargados para el servidor ${targetGuildId}`)
         )
         .catch(console.error);
     } else {
       await rest.put(
-          Routes.applicationCommands(config.clientID),
-          { body: commands }
-        )
+        Routes.applicationCommands(config.clientID),
+        { body: commands }
+      )
         .then(() =>
           console.log(`[✅] Comandos slash globales cargados`)
         )

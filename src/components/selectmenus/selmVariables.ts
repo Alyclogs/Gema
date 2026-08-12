@@ -1,7 +1,7 @@
 import { EmbedBuilder, StringSelectMenuComponent, StringSelectMenuInteraction } from 'discord.js'
 import { GSelectMenu } from '../../models/gema-models'
 import { variables as getVariables, functions as utilFunctions } from '../../lib/Variables'
-import { createEmbedPagination } from '../../util/interactions/pagination'
+import { createEmbedPagination } from '../../util/pagination'
 
 const selmVariables = new GSelectMenu()
 selmVariables.customId = 'variables_menu'

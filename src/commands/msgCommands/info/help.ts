@@ -29,7 +29,7 @@ export default new Command({
         if (args[0]) {
             const comando = client.commands.get(args[0].toLowerCase()) || client.commands.find(c => c.aliases && c.aliases.includes(args[0].toLowerCase()));
             const categoria = categorias.find(categoria => categoria.toLowerCase() === args[0].toLowerCase());
-            const subcomando = comando?.subcomands?.find(s => s.name === args[1]?.toLowerCase())
+            const subcomando = comando?.subcommands?.find(s => s.name === args[1]?.toLowerCase())
             const opcion = subcomando?.options?.find(o => o.name === args[2]?.toLowerCase())
 
             if (comando) {
@@ -74,9 +74,9 @@ export default new Command({
                 } else {
                     embed.setDescription(comando.description)
                     if (comando.aliases && comando.aliases.length >= 1) embed.addFields({ name: `Aliases`, value: `${comando.aliases.map(alias => `\`${alias}\``).join(", ")}` },);
-                    if (comando.subcomands?.length) embed.addFields({
+                    if (comando.subcommands?.length) embed.addFields({
                         name: `Subcomandos`,
-                        value: `${comando.subcomands.map(s => `${emojis.dot} \`${comando.name + ' ' + s.name}\``).join("\n")}`
+                        value: `${comando.subcommands.map(s => `${emojis.dot} \`${comando.name + ' ' + s.name}\``).join("\n")}`
                     });
                     if (comando.uso) embed.addFields({ name: `Uso`, value: `${comando.uso}` });
                     if (comando.timeout) embed.addFields({ name: `Cooldown`, value: formatTime(comando.timeout) });

@@ -1,6 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
-import type Bot from '../../structures/Bot';
-import emojis from '../../lib/emojis.json';
+import type Bot from '../structures/Bot';
+import emojis from '../lib/emojis.json';
 
 export type ErrorContext = Record<
   string,

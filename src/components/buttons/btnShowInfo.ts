@@ -1,5 +1,5 @@
 import { GButton } from '../../models/gema-models'
-import { buildSelectMenuInfoEmbed } from '../../util/interactions/selectMenuEmbeds'
+import { buildSelectMenuInfoEmbed } from '../../helpers/interactions/selectMenuEmbeds'
 
 // Botón global con customId dinámico: se crea como `showInfo|<customId del selectmenu>` (ver selectmenu.ts)
 // y gracias a `prefix: true` se resuelve por Bot.resolveButton sin tocar interactionCreate.ts

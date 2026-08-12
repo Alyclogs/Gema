@@ -6,11 +6,11 @@ import { ErrorCodes } from "../lib/Errors";
 import { Permissions, Permissions2 } from "../lib/Permissions";
 import ExtendedMessage from "../typing/ExtendedMessage";
 import { CommandPerms } from "../typing/Command";
-import { applyUnicodeFont, FontKey, getRandomFontKey } from "./decoration/fonts";
+import { applyUnicodeFont, FontKey, getRandomFontKey } from "../helpers/decoration/fonts";
 import fontsData from '../lib/fonts.json';
 import { User, model as usermodel } from "../models/user";
 import ExtendedInteraction from "../typing/ExtendedInteraction";
-import { ErrorContext, reportError } from "./errors/errorReporter";
+import { ErrorContext, reportError } from "./errorReporter";
 
 type InputChannel = ExtendedMessage["channel"] | ExtendedInteraction["channel"];
 type SendableChannel = Exclude<NonNullable<InputChannel>, PartialGroupDMChannel>;

@@ -1,6 +1,6 @@
 import { ColorResolvable, EmbedBuilder } from 'discord.js';
 import { embedModel, EmbedDataType, GEmbed } from '../../../models/gema-models';
-import { createEmbedPagination } from '../../../util/interactions/pagination';
+import { createEmbedPagination } from '../../../util/pagination';
 import { Permissions } from '../../../lib/Permissions';
 import { Command } from '../../../structures/Command';
 import ExtendedMessage from '../../../typing/ExtendedMessage';
@@ -33,7 +33,7 @@ export default new Command({
   aliases: ['embeds'],
   uso: '`gema embed <subcomando>`\n`gema help embed <subcomando>` para obtener más ayuda',
   timeout: 0,
-  subcomands: [
+  subcommands: [
     {
       name: 'create',
       description: 'Crea un embed vacío que luego puedes editar',
