@@ -42,7 +42,11 @@ export default new SlashCommand({
 
         const group = args.getSubcommandGroup(false)
         const subcommand = args.getSubcommand()
-        const guildId = interaction.guild?.id
+        const guildId = interaction.guildId
+
+        if (!guildId) {
+            return interaction.editReply(`${emojis.error} | Este comando solo puede usarse dentro de un servidor.`)
+        }
 
         const svSettings = await ServerConfig.findOne({ guildId: guildId }).exec()
 

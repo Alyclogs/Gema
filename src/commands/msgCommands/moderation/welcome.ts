@@ -38,8 +38,12 @@ export default new Command({
 
     async run({ message, client, args, emojis }) {
         const subcommand = args[0]?.toLowerCase();
-        const guildId = message.guild?.id;
+        const guildId = message.guildId;
         const option = args[1]?.toLowerCase();
+
+        if (!guildId) {
+            return message.reply(`${emojis.error} | Este comando solo puede usarse dentro de un servidor.`);
+        }
 
         const svSettings = await ServerConfig.findOne({ guildId: guildId }).exec();
 
