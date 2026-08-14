@@ -7,7 +7,7 @@ import config from '../config.json';
 import { CommandType, SlashCommandType, RegisterCommandsOptions } from '../typing/Command';
 import emojis from '../lib/emojis.json'
 import { Event } from '../typing/Event';
-import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, GSelectMenu, GModal } from '../models/gema-models'
+import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, embedModel, selectmenuModel, messageModel, autoresponderModel, GSelectMenu, GModal } from '../models/gema-models'
 import Functions from '../util/functions';
 import { DefaultExtractors } from '@discord-player/extractor';
 import { GuildQueueEvent, Player } from 'discord-player';
@@ -347,6 +347,55 @@ export default class Bot extends Client {
     }
 
     await this.importComponents()
+  }
+
+  /** Refresca `this.embeds` con los embeds guardados en Mongo. */
+  public async syncEmbeds() {
+    try {
+      this.embeds = await embedModel.find({}).exec()
+    } catch (error) {
+      console.error('[⚠️] No se pudieron sincronizar los embeds desde MongoDB:', error)
+    }
+  }
+
+  /**
+   * Refresca `this.selectmenus` con los selectmenus guardados por servidor en Mongo.
+   * No confundir con `globalSelectMenus`, que son los cargados desde `components/selectmenus`.
+   */
+  public async syncSelectMenus() {
+    try {
+      this.selectmenus = await selectmenuModel.find({}).exec()
+    } catch (error) {
+      console.error('[⚠️] No se pudieron sincronizar los selectmenus desde MongoDB:', error)
+    }
+  }
+
+  /** Refresca `this.messages` con los mensajes guardados en Mongo. */
+  public async syncMessages() {
+    try {
+      this.messages = await messageModel.find({}).exec()
+    } catch (error) {
+      console.error('[⚠️] No se pudieron sincronizar los mensajes desde MongoDB:', error)
+    }
+  }
+
+  /** Refresca `this.autoresponders` con los autoresponders guardados en Mongo. */
+  public async syncAutoresponders() {
+    try {
+      this.autoresponders = await autoresponderModel.find({}).exec()
+    } catch (error) {
+      console.error('[⚠️] No se pudieron sincronizar los autoresponders desde MongoDB:', error)
+    }
+  }
+
+  public async syncComponents() {
+    await Promise.all([
+      this.syncButtons(),
+      this.syncEmbeds(),
+      this.syncSelectMenus(),
+      this.syncMessages(),
+      this.syncAutoresponders()
+    ])
   }
 
   /**

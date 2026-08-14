@@ -133,7 +133,7 @@ export default new Command({
       );
     }
 
-    client.embeds = await embedModel.find({}).exec();
+    await client.syncEmbeds();
     const guildEmbeds = client.embeds.filter(
       (embed) => embed.guildId === message.guildId
     );

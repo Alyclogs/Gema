@@ -3,7 +3,6 @@ import { Command } from "../../../structures/Command";
 import { model as ServerConfig } from "../../../models/serverconfig-model";
 import ExtendedMessage from "../../../typing/ExtendedMessage";
 import { buildWelcomeMessage } from "../../../helpers/moderation/welcomer";
-import { ErrorCodes } from "../../../lib/Errors";
 
 export default new Command({
     name: "welcome",
@@ -38,6 +37,8 @@ export default new Command({
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 
     async run({ message, client, args, emojis }) {
+        await client.syncEmbeds();
+
         const subcommand = args[0]?.toLowerCase();
         const guildId = message.guildId;
         const option = args[1]?.toLowerCase();
@@ -125,7 +126,7 @@ export default new Command({
                 let embed: { color?: string, name?: string } | null = null;
                 const embedNameMatch = welcomeMessage.match(/{embed:\s*([^}]+)}/i);
                 if (embedNameMatch && embedNameMatch[1]) {
-                    let embedData = embedNameMatch[1].trim();
+                    let embedData = embedNameMatch[1].trim().toLowerCase();
                     const embedFound = client.embeds.find(em => em.name === embedData);
                     if (!/^#([0-9a-f]{6})$/i.test(embedData) && !embedFound) {
                         return message.reply(`${emojis.error} El embed referenciado "${embedData}" no existe. Asegúrate de que el nombre del embed sea correcto o usa un color hexadecimal válido.`);
