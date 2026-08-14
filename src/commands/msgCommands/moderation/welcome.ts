@@ -107,11 +107,8 @@ export default new Command({
                     });
                     await newSettings.save();
                 } else {
-                    if (!svSettings.welcomerSettings) {
-                        svSettings.welcomerSettings = { channel: channelId };
-                    } else {
-                        svSettings.welcomerSettings.channel = channelId;
-                    }
+                    svSettings.welcomerSettings = { ...svSettings.welcomerSettings, channel: channelId };
+                    svSettings.markModified("welcomerSettings");
                     await svSettings.save();
                 }
 
@@ -134,11 +131,8 @@ export default new Command({
                     });
                     await newSettings.save();
                 } else {
-                    if (!svSettings.welcomerSettings) {
-                        svSettings.welcomerSettings = { message: welcomeMessage };
-                    } else {
-                        svSettings.welcomerSettings.message = welcomeMessage;
-                    }
+                    svSettings.welcomerSettings = { ...svSettings.welcomerSettings, message: welcomeMessage };
+                    svSettings.markModified("welcomerSettings");
                     await svSettings.save();
                 }
 

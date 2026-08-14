@@ -70,9 +70,9 @@ interface boostSettings {
 
 const serverconfig = new mongoose.Schema<ServerConfigOptions>({
   guildId: { type: String, required: true }, prefix: String,
-  welcomerSettings: { type: Object, default: { channel: String, message: String, embed: { name: String, color: String } } },
-  farewellSettings: { type: Object, default: { channel: String, message: String, embed: String } },
-  boostSettings: { type: Object, default: { channel: String, message: String, embed: String } }
+  welcomerSettings: { type: Object },
+  farewellSettings: { type: Object },
+  boostSettings: { type: Object }
 })
 
 export const model = mongoose.model<ServerConfigOptions>('config-servers', serverconfig)
