@@ -74,17 +74,31 @@ export default new SlashCommand({
         if (group === 'set' && subcommand === 'message') {
             const welcomeMessage = args.getString('message', true)
 
+            let embed: { color?: string, name?: string } | null = null;
+            const embedNameMatch = welcomeMessage.match(/{embed:\s*([^}]+)}/i);
+            if (embedNameMatch && embedNameMatch[1]) {
+                let embedData = embedNameMatch[1].trim();
+                const embedFound = client.embeds.find(em => em.name === embedData);
+                if (!/^#([0-9a-f]{6})$/i.test(embedData) && !embedFound) {
+                    return interaction.editReply(`${emojis.error} El embed referenciado "${embedData}" no existe. Asegúrate de que el nombre del embed sea correcto o usa un color hexadecimal válido.`);
+                }
+                embed = embedFound ? { name: embedFound.name } : { color: embedData };
+            }
+
+            const cleanMessage = welcomeMessage.replace(/\s*{embed:\s*[^}]+}/gi, "").trim();
+
             if (!svSettings) {
                 const newSettings = new ServerConfig({
                     guildId: guildId,
                     prefix: client.config.prefix,
                     welcomerSettings: {
-                        message: welcomeMessage
+                        message: cleanMessage,
+                        embed: embed || undefined
                     }
                 });
                 await newSettings.save();
             } else {
-                svSettings.welcomerSettings = { ...svSettings.welcomerSettings, message: welcomeMessage };
+                svSettings.welcomerSettings = { ...svSettings.welcomerSettings, message: cleanMessage, embed: embed || undefined };
                 svSettings.markModified("welcomerSettings");
                 await svSettings.save();
             }
