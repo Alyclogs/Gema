@@ -11,10 +11,8 @@ export default new Event({
   once: false
 },
   async (client: Bot, member: GuildMember) => {
-    if (member.user.bot) return
-
     try {
-      await ensureUser(member.id)
+      if (!member.user.bot) await ensureUser(member.id)
 
       const svSettings = await ServerConfig.findOne({ guildId: member.guild.id }).exec()
       if (!svSettings) {

@@ -126,8 +126,8 @@ export default new Command({
                 let embed: { color?: string, name?: string } | null = null;
                 const embedNameMatch = welcomeMessage.match(/{embed:\s*([^}]+)}/i);
                 if (embedNameMatch && embedNameMatch[1]) {
-                    let embedData = embedNameMatch[1].trim().toLowerCase();
-                    const embedFound = client.embeds.find(em => em.name === embedData);
+                    let embedData = embedNameMatch[1].trim();
+                    const embedFound = client.embeds.find(em => em.name.toLowerCase() === embedData.toLowerCase());
                     if (!/^#([0-9a-f]{6})$/i.test(embedData) && !embedFound) {
                         return message.reply(`${emojis.error} El embed referenciado "${embedData}" no existe. Asegúrate de que el nombre del embed sea correcto o usa un color hexadecimal válido.`);
                     }
