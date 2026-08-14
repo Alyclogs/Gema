@@ -3,6 +3,7 @@ import { Command } from "../../../structures/Command";
 import { model as ServerConfig } from "../../../models/serverconfig-model";
 import ExtendedMessage from "../../../typing/ExtendedMessage";
 import { buildWelcomeMessage } from "../../../helpers/moderation/welcomer";
+import { ErrorCodes } from "../../../lib/Errors";
 
 export default new Command({
     name: "welcome",
@@ -42,59 +43,59 @@ export default new Command({
         const option = args[1]?.toLowerCase();
 
         if (!guildId) {
-            return message.reply(`${emojis.error} | Este comando solo puede usarse dentro de un servidor.`);
+            return message.reply(`${emojis.error} Este comando solo puede usarse dentro de un servidor.`);
         }
 
         const svSettings = await ServerConfig.findOne({ guildId: guildId }).exec();
 
         if (!subcommand || !["set", "show"].includes(subcommand)) {
-            return message.reply(`${emojis.error} | Debes especificar un subcomando válido. Usa \`gema help welcome\` para ver la lista de subcomandos disponibles.`);
+            return message.reply(`${emojis.error} Debes especificar un subcomando válido. Usa \`gema help welcome\` para ver la lista de subcomandos disponibles.`);
         }
 
         if (subcommand === "show") {
             if (!svSettings || !svSettings.welcomerSettings) {
-                return message.reply(`${emojis.error} | No hay un mensaje de bienvenida configurado para este servidor.`);
+                return message.reply(`${emojis.error} No hay un mensaje de bienvenida configurado para este servidor.`);
             }
             if (!svSettings.welcomerSettings.channel) {
-                return message.reply(`${emojis.error} | No hay un canal de bienvenida configurado para este servidor.`);
+                return message.reply(`${emojis.error} No hay un canal de bienvenida configurado para este servidor.`);
             }
 
             const channelId = svSettings.welcomerSettings.channel;
             const channel = message.guild?.channels.cache.get(channelId);
             if (!channel) {
-                return message.reply(`${emojis.error} | No se pudo encontrar el canal de bienvenida configurado. Asegúrate de que el bot tenga acceso a ese canal.`);
+                return message.reply(`${emojis.error} No se pudo encontrar el canal de bienvenida configurado. Asegúrate de que el bot tenga acceso a ese canal.`);
             }
 
             try {
                 client.functions.setInput(message as ExtendedMessage);
                 const preview = await buildWelcomeMessage(client, svSettings, client.functions.varis ?? []);
                 if (!preview) {
-                    return message.reply(`${emojis.error} | No se ha establecido un mensaje de bienvenida.`);
+                    return message.reply(`${emojis.error} No se ha establecido un mensaje de bienvenida.`);
                 }
 
-                await message.reply(`${emojis.check} | Vista previa del mensaje de bienvenida (se enviará a ${channel} cuando alguien se una):`);
+                await message.reply(`${emojis.check} Vista previa del mensaje de bienvenida (se enviará a ${channel} cuando alguien se una):`);
                 return message.reply(preview);
             } catch (error) {
                 console.error(error);
-                return message.reply(`${emojis.error} | Ocurrió un error al generar la vista previa del mensaje de bienvenida.`);
+                return message.reply(`${emojis.error} Ocurrió un error al generar la vista previa del mensaje de bienvenida.`);
             }
         }
 
         if (subcommand === "set") {
             if (!option) {
-                return message.reply(`${emojis.error} | Debes especificar una opción válida para el subcomando \`set\`. Usa \`gema help welcome set\` para más información.`);
+                return message.reply(`${emojis.error} Debes especificar una opción válida para el subcomando \`set\`. Usa \`gema help welcome set\` para más información.`);
             }
 
             if (option === "channel") {
                 const channelMention = args[2];
                 if (!channelMention) {
-                    return message.reply(`${emojis.error} | Debes mencionar un canal válido. Uso: \`gema welcome set channel <canal>\``);
+                    return message.reply(`${emojis.error} Debes mencionar un canal válido. Uso: \`gema welcome set channel <canal>\``);
                 }
 
                 const channelId = channelMention.replace(/<#|>/g, "");
                 const channel = message.guild?.channels.cache.get(channelId);
                 if (!channel) {
-                    return message.reply(`${emojis.error} | No se pudo encontrar el canal especificado. Asegúrate de que el bot tenga acceso a ese canal.`);
+                    return message.reply(`${emojis.error} No se pudo encontrar el canal especificado. Asegúrate de que el bot tenga acceso a ese canal.`);
                 }
 
                 if (!svSettings) {
@@ -118,7 +119,18 @@ export default new Command({
             if (option === "message") {
                 const welcomeMessage = args.slice(2).join(" ");
                 if (!welcomeMessage) {
-                    return message.reply(`${emojis.error} | Debes especificar un mensaje de bienvenida. Uso: \`gema welcome set message <mensaje>\``);
+                    return message.reply(`${emojis.error} Debes especificar un mensaje de bienvenida. Uso: \`gema welcome set message <mensaje>\``);
+                }
+
+                let embed: { color?: string, name?: string } | null = null;
+                const embedNameMatch = welcomeMessage.match(/{embed:(\w+)}/);
+                if (embedNameMatch && embedNameMatch[1]) {
+                    let embedData = embedNameMatch[1];
+                    const embedFound = client.embeds.find(em => em.name === embedData);
+                    if (!/^#([0-9a-f]{6})/i.test(embedData) && !embedFound) {
+                        return message.reply(`${emojis.error} El embed referenciado "${embedData}" no existe. Asegúrate de que el nombre del embed sea correcto o usa un color hexadecimal válido.`);
+                    }
+                    embed = embedFound ? { name: embedFound.name } : { color: embedData };
                 }
 
                 if (!svSettings) {
@@ -126,12 +138,13 @@ export default new Command({
                         guildId: guildId,
                         prefix: client.config.prefix,
                         welcomerSettings: {
-                            message: welcomeMessage
+                            message: welcomeMessage,
+                            embed: embed || undefined
                         }
                     });
                     await newSettings.save();
                 } else {
-                    svSettings.welcomerSettings = { ...svSettings.welcomerSettings, message: welcomeMessage };
+                    svSettings.welcomerSettings = { ...svSettings.welcomerSettings, message: welcomeMessage, embed: embed || undefined };
                     svSettings.markModified("welcomerSettings");
                     await svSettings.save();
                 }
@@ -139,7 +152,7 @@ export default new Command({
                 return message.reply(`${emojis.check} El mensaje de bienvenida ha sido establecido correctamente.`);
             }
 
-            return message.reply(`${emojis.error} | Opción no válida para \`set\`. Usa \`channel\` o \`message\`. Usa \`gema help welcome set\` para más información.`);
+            return message.reply(`${emojis.error} Opción no válida para \`set\`. Usa \`channel\` o \`message\`. Usa \`gema help welcome set\` para más información.`);
         }
     }
 })

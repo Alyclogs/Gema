@@ -10,8 +10,8 @@ export class WelcomerSettings implements welcomerSettings {
   channel = '';
   message?: string;
   embed?: {
-    name: string,
-    color: string
+    name?: string,
+    color?: string
   };
 }
 
@@ -19,8 +19,8 @@ export class FarewellSettings implements farewellSettings {
   channel?: string;
   message?: string;
   embed?: {
-    name: string,
-    color: string
+    name?: string,
+    color?: string
   };
 }
 
@@ -28,8 +28,8 @@ export class BoostSettings implements boostSettings {
   channel?: string;
   message?: string;
   embed?: {
-    name: string,
-    color: string
+    name?: string,
+    color?: string
   };
 }
 
@@ -45,8 +45,8 @@ interface welcomerSettings {
   channel?: string
   message?: string
   embed?: {
-    name: string,
-    color: string
+    name?: string,
+    color?: string
   }
 }
 
@@ -54,8 +54,8 @@ interface farewellSettings {
   channel?: string
   message?: string
   embed?: {
-    name: string,
-    color: string
+    name?: string,
+    color?: string
   }
 }
 
@@ -63,8 +63,8 @@ interface boostSettings {
   channel?: string
   message?: string
   embed?: {
-    name: string,
-    color: string
+    name?: string,
+    color?: string
   }
 }
 
