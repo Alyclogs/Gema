@@ -6,6 +6,7 @@ declare global {
             mongourl: string;
             hugging_face_token: string;
             environment: "dev" | "prod" | "debug";
+            registerCommands?: string;
         }
     }
 }

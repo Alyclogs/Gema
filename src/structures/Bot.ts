@@ -72,8 +72,8 @@ export default class Bot extends Client {
       this.importCommands(),
       this.importComponents(),
       this.importSlashCommands(
-        true,
-        //process.env.environment === 'prod' ? undefined : process.env.guildId
+        process.env.registerCommands !== 'false',
+        process.env.environment === 'prod' ? undefined : process.env.guildId
       )
     ])
 
