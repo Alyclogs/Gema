@@ -10,7 +10,7 @@ import { Event } from '../typing/Event';
 import { Autoresponder, GEmbed, GButton, GMessage, buttonModel, embedModel, selectmenuModel, messageModel, autoresponderModel, GSelectMenu, GModal } from '../models/gema-models'
 import Functions from '../util/functions';
 import { DefaultExtractors } from '@discord-player/extractor';
-import { GuildQueueEvent, Player } from 'discord-player';
+import { GuildQueue, GuildQueueEvent, Player } from 'discord-player';
 import { Log as YoutubeLog, YoutubeiExtractor } from 'discord-player-youtubei';
 
 export default class Bot extends Client {
@@ -113,8 +113,7 @@ export default class Bot extends Client {
       console.log(
         `[Música] PlayerStart guild=${queue.guild.id} track=${track.id} voice=${queue.connection?.state.status || 'sin conexión'}`
       )
-      // Por defecto el encoder Opus usa un bitrate bajo; 'auto' lo sube al máximo que permite el canal.
-      queue.node.setBitrate('auto')
+      this.bumpEncoderBitrate(queue)
       const suppressAnnouncement = queue.metadata?.suppressNextStart === true
       queue.setMetadata({
         ...queue.metadata,
@@ -159,6 +158,32 @@ export default class Bot extends Client {
         channel.send(`${this.emotes.error} No pude iniciar **${track.cleanTitle}**. El error fue reportado.`).catch(console.error)
       }
     })
+  }
+
+  /**
+   * Sube el bitrate del encoder Opus al máximo que permite el canal de voz.
+   * `queue.node.setBitrate()` (de discord-player) delega en `@discord-player/opus`, cuyo
+   * `setBitrate` espera un método `applyEncoderCTL`/`encoderCTL` en el encoder nativo; la versión
+   * de `mediaplex` instalada solo expone `applyEncoderCtl` (minúscula) y `setBitrate` propio, así
+   * que ese wrapper revienta con un TypeError. Llamamos directamente al encoder nativo para evitarlo.
+   */
+  private bumpEncoderBitrate(queue: GuildQueue) {
+    try {
+      const nativeEncoder = (
+        queue.dispatcher?.audioResource?.encoder as
+          | { encoder?: { setBitrate?: (bitrate: number) => void } }
+          | null
+          | undefined
+      )?.encoder
+      if (typeof nativeEncoder?.setBitrate === 'function') {
+        nativeEncoder.setBitrate(queue.channel?.bitrate ?? 64_000)
+      }
+    } catch (err) {
+      void this.functions.sendGemaError(err as Error, {
+        origen: 'ajuste de bitrate del reproductor',
+        servidor: queue.guild.id
+      })
+    }
   }
 
   private async importEvents() {
