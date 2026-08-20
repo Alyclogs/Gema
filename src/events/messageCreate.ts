@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvable, EmbedBuilder, Message, PermissionResolvable, time } from "discord.js";
 import Bot from "../structures/Bot";
 import { Event } from "../typing/Event";
-import { BoostSettings, FarewellSettings, model as serverconfig, ServerConfig, WelcomerSettings } from "../models/serverconfig-model"
+import { ensureServerConfig, model as serverconfig } from "../models/serverconfig-model"
 import { ensureUser } from "../models/user"
 import config from "../config.json"
 import ExtendedMessage from "../typing/ExtendedMessage";
@@ -26,13 +26,9 @@ export default new Event({
 
         let serverData = await serverconfig.findOne({ guildId: message.guildId }).exec()
         if (!serverData) {
-            await serverconfig.create(new ServerConfig({
-                guildId: guild.id,
-                prefix: 'g.',
-                welcomerSettings: new WelcomerSettings(),
-                farewellSettings: new FarewellSettings(),
-                boostSettings: new BoostSettings()
-            }))
+            // Red de seguridad para servidores donde el bot ya estaba antes de que guildCreate
+            // se encargara de crear la configuración inicial (ver src/events/guildCreate.ts).
+            serverData = await ensureServerConfig(guild.id)
         }
         if (author.id !== client?.user?.id) {
             await ensureUser(author.id)

@@ -15,13 +15,9 @@ export default new Event({
       if (!member.user.bot) await ensureUser(member.id)
 
       const svSettings = await ServerConfig.findOne({ guildId: member.guild.id }).exec()
-      if (!svSettings) {
-        const newSettings = new ServerConfig({ guildId: member.guild.id, prefix: client.config.prefix })
-        await newSettings.save()
-        return
-      }
+      if (!svSettings || !svSettings.welcomerSettings) return
 
-      const channelId = svSettings.welcomerSettings?.channel
+      const channelId = svSettings.welcomerSettings.channel
       if (!channelId) return
 
       const channel = member.guild.channels.cache.get(channelId)

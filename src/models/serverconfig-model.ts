@@ -76,3 +76,11 @@ const serverconfig = new mongoose.Schema<ServerConfigOptions>({
 })
 
 export const model = mongoose.model<ServerConfigOptions>('config-servers', serverconfig)
+
+export async function ensureServerConfig(guildId: string, prefix = 'g.') {
+  return model.findOneAndUpdate(
+    { guildId },
+    { $setOnInsert: { guildId, prefix } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  ).exec()
+}

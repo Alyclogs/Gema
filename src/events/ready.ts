@@ -20,5 +20,16 @@ export default new Event(
       console.log(`☁ Error al conectarse a la base de datos`);
       console.log(err)
     }
+
+    // El intent GuildMembers solo permite recibir eventos de miembros; no precarga el caché.
+    // Sin esto, guild.members.cache queda casi vacío y variables como {server_membercount_nobots}
+    // o {server_botcount} devuelven casi siempre 0/1 en vez del conteo real.
+    const guilds = client.guilds.cache
+    await Promise.all(guilds.map((guild) =>
+      guild.members.fetch().catch((err) =>
+        console.log(`No se pudieron precargar los miembros de ${guild.name} (${guild.id}):`, err)
+      )
+    ))
+    console.log(`👥 Miembros precargados para ${guilds.size} servidor(es)`)
   }
 );
