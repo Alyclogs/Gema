@@ -3,6 +3,11 @@ FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+
+RUN apt-get update && apt-get install -y --no-install-recommends python3 \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN npm ci --maxsockets=3 --no-audit --no-fund
 
 COPY tsconfig.json ./
