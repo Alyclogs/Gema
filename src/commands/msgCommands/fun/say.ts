@@ -5,7 +5,7 @@ export default new Command({
     name: 'say',
     description: 'Envía un mensaje con la bot',
     uso: `\`gema say <mensaje>\``,
-    timeout: 0,
+    cooldown: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes],
 

@@ -10,7 +10,7 @@ export default new SlashCommand({
         .setDescription('Muestra información sobre mis comandos')
         .addStringOption(option =>
             option.setName('comando').setDescription('Muestra información sobre un comando')) as unknown as SlashCommandType["data"],
-    timeout: 0,
+    cooldown: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes],
 
@@ -45,7 +45,7 @@ export default new SlashCommand({
                     if (opcion) {
                         embed.setDescription(opcion.description)
                         if (opcion.uso) embed.addFields({ name: `Uso`, value: `${opcion.uso}` });
-                        if (comando.timeout) embed.addFields({ name: `Cooldown`, value: formatTime(comando.timeout) });
+                        if (comando.cooldown) embed.addFields({ name: `Cooldown`, value: formatTime(comando.cooldown) });
                         embed.addFields({
                             name: `Permisos del usuario requeridos`,
                             value: comando.memberperms && comando.memberperms.length >= 1 ? `${comando.memberperms.map(permiso => `\`${permiso.perm}\``).join(", ")}` : `Ninguno`
@@ -63,7 +63,7 @@ export default new SlashCommand({
                             name: `Opciones`,
                             value: `${subcomando.options.map(o => `${emojis.dot} \`${comando.name + ' ' + subcomando.name + ' ' + o.name}\``).join("\n")}`
                         });
-                        if (comando.timeout) embed.addFields({ name: `Cooldown`, value: formatTime(comando.timeout) });
+                        if (comando.cooldown) embed.addFields({ name: `Cooldown`, value: formatTime(comando.cooldown) });
                         embed.addFields({
                             name: `Permisos del usuario requeridos`,
                             value: comando.memberperms && comando.memberperms.length >= 1 ? `${comando.memberperms.map(permiso => `\`${permiso.perm}\``).join(", ")}` : `Ninguno`
@@ -82,7 +82,7 @@ export default new SlashCommand({
                         value: `${comando.subcommands?.map(s => `${emojis.dot} \`${comando.name + ' ' + s.name}\``).join("\n")}`
                     });
                     if (comando.uso) embed.addFields({ name: `Uso`, value: `\`${comando.uso}\`` });
-                    if (comando.timeout) embed.addFields({ name: `Cooldown`, value: formatTime(comando.timeout) });
+                    if (comando.cooldown) embed.addFields({ name: `Cooldown`, value: formatTime(comando.cooldown) });
                     embed.addFields({
                         name: `Permisos del usuario requeridos`,
                         value: comando.memberperms && comando.memberperms.length >= 1 ? `${comando.memberperms?.map(permiso => `\`${permiso.perm}\``).join(", ")}` : `Ninguno`

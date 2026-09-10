@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvable, EmbedBuilder, Message, PermissionResolvable, time } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, Collection, ColorResolvable, EmbedBuilder, Message, PermissionResolvable, time } from "discord.js";
 import Bot from "../structures/Bot";
 import { Event } from "../typing/Event";
 import { ensureServerConfig, model as serverconfig } from "../models/serverconfig-model"
@@ -81,20 +81,23 @@ export default new Event({
                         allowedMentions: { repliedUser: false }
                     })
                 }
-                const cooldownData = `${author.id}_cmd:${cmd}`
-                const timesc = Math.floor(Date.now() / 1000)
-                const timeout = command.timeout || 0
+                if (!client.cooldowns.has(command.name)) {
+                    client.cooldowns.set(command.name, new Collection())
+                }
+                const now = Date.now()
+                const commandCooldowns = client.cooldowns.get(command.name)!
+                const cooldownAmount = (command.cooldown || 0) * 1000
 
-                if (client.timeouts.has(cooldownData)) {
-                    const expirationTime = (client.timeouts.get(cooldownData) || 0) + timeout
-                    if (timesc < expirationTime) {
+                if (commandCooldowns.has(author.id)) {
+                    const expirationTime = commandCooldowns.get(author.id)! + cooldownAmount
+                    if (now < expirationTime) {
                         return message.reply({
-                            content: `${emotes['hmph']} Estás yendo muy rápido! Podrás volver a ejecutar este comando ${time(expirationTime, 'R')}`,
+                            content: `${emotes['hmph']} Estás yendo muy rápido! Podrás volver a ejecutar este comando ${time(Math.round(expirationTime / 1000), 'R')}`,
                         })
                     }
                 }
-                client.timeouts.set(cooldownData, timesc)
-                setTimeout(() => client.timeouts.delete(cooldownData), timeout * 1000)
+                commandCooldowns.set(author.id, now)
+                setTimeout(() => commandCooldowns.delete(author.id), cooldownAmount)
                 setTimeout(() => client.nsfwgifs = [], 180e3)
 
                 if (command.run) {

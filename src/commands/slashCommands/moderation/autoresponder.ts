@@ -52,7 +52,7 @@ export default new SlashCommand({
             subcommand
                 .setName('remove_all')
                 .setDescription('Elimina todos los autoresponders para este servidor')),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.gestionarServidor],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces, Permissions.gestionarServidor],
 

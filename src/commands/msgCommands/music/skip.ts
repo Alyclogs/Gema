@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['saltar'],
   description: 'Salta la canción actual',
   uso: 'gema skip',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('skip')

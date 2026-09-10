@@ -32,7 +32,7 @@ export default new Command({
             uso: "`gema welcome show`"
         }
     ],
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.gestionarServidor],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

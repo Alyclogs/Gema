@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['disconnect', 'salir'],
   description: 'Desconecta a Gema del canal de voz',
   uso: 'gema leave',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('leave')

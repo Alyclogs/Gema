@@ -20,7 +20,7 @@ export default new SlashCommand({
           { name: 'Automática', value: 'autoplay' }
         )
     ) as unknown as SlashCommandType['data'],
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicSlashCommand('loop')

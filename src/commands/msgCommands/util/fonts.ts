@@ -8,7 +8,7 @@ export default new Command({
     aliases: ['fuentes', 'font'],
     description: 'Muestra las fuentes disponibles para usar con `{font:<fuente>}` o `gema utility decor`',
     uso: '`gema fonts`',
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

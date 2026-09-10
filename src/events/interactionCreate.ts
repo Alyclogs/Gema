@@ -1,4 +1,4 @@
-import { AutocompleteInteraction, ChatInputCommandInteraction, ColorResolvable, CommandInteractionOptionResolver, EmbedBuilder, PermissionResolvable, time } from 'discord.js';
+import { AutocompleteInteraction, ChatInputCommandInteraction, Collection, ColorResolvable, CommandInteractionOptionResolver, EmbedBuilder, PermissionResolvable, time } from 'discord.js';
 import ExtendedInteraction from '../typing/ExtendedInteraction';
 import { Event } from '../typing/Event';
 import Bot from '../structures/Bot';
@@ -11,7 +11,7 @@ export default new Event({
 },
   async (client: Bot, interaction: ExtendedInteraction) => {
     if (!interaction.guild) return
-    const { emotes, timeouts } = client
+    const { emotes } = client
     if (!interaction.channel) return
     client.functions.setInput(interaction)
 
@@ -50,21 +50,24 @@ export default new Event({
         })
       }
 
-      const cooldownData = `${interaction.user.id}_cmd:${commandName}`
-      const timesc = Math.floor(Date.now() / 1000)
-      const timeout = command.timeout || 0
+      if (!client.cooldowns.has(commandName)) {
+        client.cooldowns.set(commandName, new Collection())
+      }
+      const now = Date.now()
+      const commandCooldowns = client.cooldowns.get(commandName)!
+      const cooldownAmount = (command.cooldown || 0) * 1000
 
-      if (timeouts.has(cooldownData)) {
-        const expirationTime = (client?.timeouts?.get(cooldownData) || 0) + timeout
-        if (timesc < expirationTime) {
+      if (commandCooldowns.has(interaction.user.id)) {
+        const expirationTime = commandCooldowns.get(interaction.user.id)! + cooldownAmount
+        if (now < expirationTime) {
           return interaction.reply({
-            content: `${emotes['hmph']} Estás yendo muy rápido! Podrás volver a ejecutar este comando ${time(expirationTime, 'R')}`,
+            content: `${emotes['hmph']} Estás yendo muy rápido! Podrás volver a ejecutar este comando ${time(Math.round(expirationTime / 1000), 'R')}`,
             allowedMentions: { repliedUser: false }
           })
         }
       }
-      client.timeouts.set(cooldownData, timesc)
-      setTimeout(() => client.timeouts.delete(cooldownData), timeout * 1000)
+      commandCooldowns.set(interaction.user.id, now)
+      setTimeout(() => commandCooldowns.delete(interaction.user.id), cooldownAmount)
 
       try {
         await command.run({

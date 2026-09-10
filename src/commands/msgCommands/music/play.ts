@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['reproducir'],
   description: 'Busca o reproduce una canción, álbum o playlist',
   uso: 'gema play <búsqueda o enlace>',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('play')

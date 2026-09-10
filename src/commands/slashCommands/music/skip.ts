@@ -7,7 +7,7 @@ export default new SlashCommand({
   data: new SlashCommandBuilder()
     .setName('skip')
     .setDescription('Salta la canción actual'),
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicSlashCommand('skip')

@@ -7,7 +7,7 @@ export default new Command({
     description: 'Devuelve información sobre mi latencia',
     aliases: ['latencia'],
     uso: '',
-    timeout: 0,
+    cooldown: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

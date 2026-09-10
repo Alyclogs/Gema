@@ -10,7 +10,7 @@ export default new Command({
     aliases: [],
     nsfw: true,
     uso: '',
-    timeout: 0,
+    cooldown: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

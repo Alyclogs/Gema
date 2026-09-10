@@ -85,7 +85,7 @@ export default new SlashCommand({
                         .setDescription('Edita la marca de tiempo de un embed')
                         .addStringOption(option => option.setName('embed').setDescription('El nombre del embed').setRequired(true).setAutocomplete(true))
                         .addBooleanOption(option => option.setName('timestamp').setDescription('Añade una marca de tiempo')))),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.gestionarServidor],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces, Permissions.gestionarServidor],
 

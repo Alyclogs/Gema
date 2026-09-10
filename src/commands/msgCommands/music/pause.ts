@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['pausa'],
   description: 'Pausa la reproducción',
   uso: 'gema pause',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('pause')

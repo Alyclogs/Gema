@@ -21,7 +21,7 @@ export default new SlashCommand({
             subcommand
                 .setName('resetprompt')
                 .setDescription('Reinicia el historial de conversaciones con Gema')),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

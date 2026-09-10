@@ -6,7 +6,7 @@ export default new SlashCommand({
   data: new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Devuelve información sobre mi latencia (ms)'),
-  timeout: 0,
+  cooldown: 0,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

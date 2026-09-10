@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['parar'],
   description: 'Detiene la música y limpia la cola',
   uso: 'gema stop',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('stop')

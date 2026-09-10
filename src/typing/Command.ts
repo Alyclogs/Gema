@@ -61,7 +61,7 @@ export type SlashCommandType = {
   nsfw?: boolean
   botperms: CommandPerms[]
   memberperms: CommandPerms[]
-  timeout?: number
+  cooldown?: number
   run: SlashCommandRunFunction
   autocomplete?: SlashCommandAutocompleteFunction
 }
@@ -75,14 +75,14 @@ export type CommandType = {
   uso?: string
   botperms?: CommandPerms[]
   memberperms?: CommandPerms[]
-  timeout?: number
+  cooldown?: number
   subcommands?: SubcommandType[]
   run?: CommandRunFunction;
 }
 
 type SubcommandType =
-  Omit<CommandType, "botperms" | "memberperms" | "timeout" | "subcommands" | "run">
-  & { options?: Omit<CommandType, "botperms" | "memberperms" | "timeout" | "subcommands" | "run">[] }
+  Omit<CommandType, "botperms" | "memberperms" | "cooldown" | "subcommands" | "run">
+  & { options?: Omit<CommandType, "botperms" | "memberperms" | "cooldown" | "subcommands" | "run">[] }
 
 
 export interface RegisterCommandsOptions {

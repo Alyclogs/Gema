@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['volumen'],
   description: 'Cambia el volumen de reproducción',
   uso: 'gema volume <0-100>',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('volume')

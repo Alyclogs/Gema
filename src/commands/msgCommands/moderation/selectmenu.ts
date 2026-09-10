@@ -81,7 +81,7 @@ export default new Command({
     'Crea y administra menús de selección para mensajes o autoresponders',
   aliases: ['select', 'menu', 'menú'],
   uso: '`gema selectmenu <subcomando>`\n`gema help selectmenu <subcomando>` para obtener más ayuda',
-  timeout: 0,
+  cooldown: 0,
   subcommands: [
     {
       name: 'create',

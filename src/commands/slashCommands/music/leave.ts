@@ -7,7 +7,7 @@ export default new SlashCommand({
   data: new SlashCommandBuilder()
     .setName('leave')
     .setDescription('Desconecta a Gema del canal de voz'),
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicSlashCommand('leave')

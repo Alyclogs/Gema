@@ -16,7 +16,7 @@ export default new SlashCommand({
         )
         .setRequired(true)
     ) as unknown as SlashCommandType['data'],
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicSlashCommand('play')

@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['mezclar'],
   description: 'Mezcla las canciones pendientes',
   uso: 'gema shuffle',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('shuffle')

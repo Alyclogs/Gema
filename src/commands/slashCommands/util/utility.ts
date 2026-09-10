@@ -74,7 +74,7 @@ export default new SlashCommand({
                 .setAutocomplete(true)
             )
         ),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

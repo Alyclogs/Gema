@@ -24,7 +24,7 @@ export default new Command({
     'Crea y administra mensajes del servidor con botones y menús de selección',
   aliases: ['msg', 'mensaje'],
   uso: '`gema message <subcomando>`\n`gema help message <subcomando>` para obtener más ayuda',
-  timeout: 0,
+  cooldown: 0,
   subcommands: [
     {
       name: 'create',

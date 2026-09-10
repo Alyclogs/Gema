@@ -1,4 +1,4 @@
-import { ActionRowBuilder, BaseInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, CollectorFilter, ColorResolvable, DMChannel, EmbedBuilder, Guild, GuildMember, Message, MessageComponentInteraction, MessageCreateOptions, PartialGroupDMChannel, PermissionResolvable, StringSelectMenuBuilder, TextChannel, time } from "discord.js";
+import { ActionRowBuilder, BaseInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Collection, CollectorFilter, ColorResolvable, DMChannel, EmbedBuilder, Guild, GuildMember, Message, MessageComponentInteraction, MessageCreateOptions, PartialGroupDMChannel, PermissionResolvable, StringSelectMenuBuilder, TextChannel, time } from "discord.js";
 import { variables, getVars, VariableType, testArg } from '../lib/Variables';
 import Bot from "../structures/Bot";
 import { EmbedDataType, ArReplyType, Autoresponder, ArChoicedOptionType, ArChoiceOptionsType, buttonModel } from "../models/gema-models";
@@ -768,19 +768,25 @@ export default class Functions {
                 return channel.send(`${this.client.emotes.sweat} ${ErrorCodes.NOT_ENOUGH_PERMS(defaultPerms.filter(p => !member?.permissions.has(p.flag as PermissionResolvable)).map(p => p.perm))}`)
 
             if (autoresponder.cooldown) {
-                const cooldownData = `${author.id}_ar:${arTrigger.triggerkey}`
-                const timesc = Math.floor(Date.now() / 1000)
+                const cooldownKey = `ar:${arTrigger.triggerkey}`
 
-                if (this.client.timeouts.has(cooldownData)) {
-                    const expirationTime = (this.client.timeouts.get(cooldownData) || 0) + autoresponder.cooldown
-                    if (timesc < expirationTime) {
+                if (!this.client.cooldowns.has(cooldownKey)) {
+                    this.client.cooldowns.set(cooldownKey, new Collection())
+                }
+                const now = Date.now()
+                const arCooldowns = this.client.cooldowns.get(cooldownKey)!
+                const cooldownAmount = autoresponder.cooldown * 1000
+
+                if (arCooldowns.has(author.id)) {
+                    const expirationTime = arCooldowns.get(author.id)! + cooldownAmount
+                    if (now < expirationTime) {
                         return message.reply({
-                            content: `⏳ Podrás volver a ejecutar este autoresponder ${time(expirationTime, 'R')}`,
+                            content: `⏳ Podrás volver a ejecutar este autoresponder ${time(Math.round(expirationTime / 1000), 'R')}`,
                         })
                     }
                 }
-                this.client.timeouts.set(cooldownData, timesc)
-                setTimeout(() => this.client.timeouts.delete(cooldownData), autoresponder.cooldown * 1000)
+                arCooldowns.set(author.id, now)
+                setTimeout(() => arCooldowns.delete(author.id), cooldownAmount)
             }
             if (arTrigger.autodelete) {
                 if (!guild?.members.me?.permissions.has(Permissions.gestionarMensajes.flag))

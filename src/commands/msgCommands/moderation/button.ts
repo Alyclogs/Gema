@@ -43,7 +43,7 @@ export default new Command({
   description: 'Crea y administra botones para mensajes o autoresponders',
   aliases: ['btn', 'botón', 'boton'],
   uso: '`gema button <subcomando>`\n`gema help button <subcomando>` para obtener más ayuda',
-  timeout: 0,
+  cooldown: 0,
   subcommands: [
     {
       name: 'create',

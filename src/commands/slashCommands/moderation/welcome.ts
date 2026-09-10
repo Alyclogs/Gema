@@ -33,7 +33,7 @@ export default new SlashCommand({
             subcommand
                 .setName('show')
                 .setDescription('Muestra el mensaje de bienvenida actual del servidor')),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.gestionarServidor],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

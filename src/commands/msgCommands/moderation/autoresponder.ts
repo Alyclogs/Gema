@@ -11,7 +11,7 @@ export default new Command({
     description: 'Crea y administra los autoresponders del servidor',
     aliases: ['ar'],
     uso: '`gema ar <subcomando>` \n`gema help ar <subcomando>` para obtener más ayuda',
-    timeout: 0,
+    cooldown: 1,
     subcommands: [
         {
             name: 'add',

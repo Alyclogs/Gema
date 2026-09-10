@@ -32,7 +32,7 @@ export default new Command({
   description: 'Crea y administra los embeds del servidor',
   aliases: ['embeds'],
   uso: '`gema embed <subcomando>`\n`gema help embed <subcomando>` para obtener más ayuda',
-  timeout: 0,
+  cooldown: 0,
   subcommands: [
     {
       name: 'create',

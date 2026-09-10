@@ -19,7 +19,7 @@ export default new Command({
     aliases: ['util'],
     description: 'Comandos de utilidad: banner de perfil, texto decorativo y generación de colores',
     uso: '`gema utility <subcomando>`\n`gema help utility <subcomando>` para obtener más ayuda',
-    timeout: 0,
+    cooldown: 0,
     subcommands: [
         {
             name: 'banner',

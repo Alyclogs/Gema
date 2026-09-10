@@ -8,7 +8,7 @@ export default new Command({
     description: 'Cambia el prefijo del bot en este servidor',
     aliases: ['changeprefix'],
     uso: `\`gema setprefix <prefijo>\``,
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.administrador],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

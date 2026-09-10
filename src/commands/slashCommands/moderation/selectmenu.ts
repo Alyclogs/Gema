@@ -95,7 +95,7 @@ export default new SlashCommand({
                 .setDescription('Elimina una opción de un menú de selección')
                 .addStringOption(opt => opt.setName('selectmenu').setDescription('El nombre del menú de selección').setRequired(true).setAutocomplete(true))
                 .addStringOption(opt => opt.setName('option').setDescription('La etiqueta, valor o índice de la opción').setRequired(true).setAutocomplete(true))),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.gestionarServidor],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['cola'],
   description: 'Muestra la cola de reproducción',
   uso: 'gema queue',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('queue')

@@ -9,7 +9,7 @@ export default new SlashCommand({
         .setDescription('Envia un mensaje con la bot')
         .addStringOption((option) =>
             option.setName('mensaje').setDescription('El mensaje a enviar').setRequired(true)) as unknown as SlashCommandType["data"],
-    timeout: 0,
+    cooldown: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes],
 

@@ -19,7 +19,8 @@ export default class Bot extends Client {
   public slashCommands = new Collection<string, SlashCommandType>();
   public commandsArray: ApplicationCommandDataResolvable[] = [];
   public emotes = emojis
-  public timeouts = new Collection<string, number>()
+  /** Cooldowns de comandos mensaje/slash y autoresponders: clave (nombre de comando o `ar:<trigger>`) -> (usuario -> timestamp de última ejecución en ms). */
+  public cooldowns = new Collection<string, Collection<string, number>>()
   public color: ColorResolvable = config.color as ColorResolvable
   public ownerIDS = config.ownerIDS
   public autoresponders: Autoresponder[] = []

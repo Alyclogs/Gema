@@ -7,7 +7,7 @@ export default new SlashCommand({
   data: new SlashCommandBuilder()
     .setName('pause')
     .setDescription('Pausa la reproducción'),
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicSlashCommand('pause')

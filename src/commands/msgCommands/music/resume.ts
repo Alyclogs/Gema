@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['continuar'],
   description: 'Continúa la reproducción',
   uso: 'gema resume',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('resume')

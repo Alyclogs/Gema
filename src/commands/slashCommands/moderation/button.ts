@@ -52,7 +52,7 @@ export default new SlashCommand({
                             { name: 'danger', value: ButtonStyle.Danger }
                         ))
                         .addStringOption(opt => opt.setName('emoji').setDescription('El emoji para tu botón')))),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.gestionarServidor],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

@@ -7,7 +7,7 @@ export default new SlashCommand({
   data: new SlashCommandBuilder()
     .setName('stop')
     .setDescription('Detiene la música y limpia la cola'),
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicSlashCommand('stop')

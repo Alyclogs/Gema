@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['repetir'],
   description: 'Configura la repetición: off, track, queue o autoplay',
   uso: 'gema loop <off|track|queue|autoplay>',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('loop')

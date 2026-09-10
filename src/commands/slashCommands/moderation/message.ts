@@ -53,7 +53,7 @@ export default new SlashCommand({
                 .setName('delete')
                 .setDescription('Elimina un mensaje')
                 .addStringOption(option => option.setName('message').setDescription('El nombre del mensaje').setRequired(true).setAutocomplete(true))),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [Permissions.gestionarServidor],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

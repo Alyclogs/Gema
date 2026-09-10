@@ -8,7 +8,7 @@ export default new SlashCommand({
     data: new SlashCommandBuilder()
         .setName('fonts')
         .setDescription('Muestra las fuentes disponibles para usar con {font:<fuente>} o /utility decor'),
-    timeout: 0,
+    cooldown: 0,
     memberperms: [],
     botperms: [Permissions.verCanal, Permissions.enviarMensajes, Permissions.insertarEnlaces],
 

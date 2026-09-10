@@ -7,7 +7,7 @@ export default new Command({
   aliases: ['np', 'sonando'],
   description: 'Muestra la canción que se está reproduciendo',
   uso: 'gema nowplaying',
-  timeout: 2,
+  cooldown: 2,
   memberperms: [],
   botperms: [Permissions.verCanal, Permissions.enviarMensajes],
   run: runMusicMessageCommand('nowplaying')
