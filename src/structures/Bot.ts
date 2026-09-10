@@ -172,9 +172,9 @@ export default class Bot extends Client {
     try {
       const nativeEncoder = (
         queue.dispatcher?.audioResource?.encoder as
-          | { encoder?: { setBitrate?: (bitrate: number) => void } }
-          | null
-          | undefined
+        | { encoder?: { setBitrate?: (bitrate: number) => void } }
+        | null
+        | undefined
       )?.encoder
       if (typeof nativeEncoder?.setBitrate === 'function') {
         nativeEncoder.setBitrate(queue.channel?.bitrate ?? 64_000)
@@ -287,7 +287,7 @@ export default class Bot extends Client {
   }
 
   private async registerCommands({ commands, guildId }: RegisterCommandsOptions) {
-    const rest = new REST({ version: '9' }).setToken(process.env.token);
+    const rest = new REST({ version: '9' }).setToken(process.env.token!);
     const targetGuildId = guildId || undefined;
 
     if (targetGuildId) {
