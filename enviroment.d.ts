@@ -7,6 +7,7 @@ declare global {
             hugging_face_token: string;
             environment: "dev" | "prod" | "debug";
             registerCommands?: string;
+            PORT?: string;
         }
     }
 }
